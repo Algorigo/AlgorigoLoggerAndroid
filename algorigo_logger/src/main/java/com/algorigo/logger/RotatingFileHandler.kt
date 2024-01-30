@@ -30,7 +30,7 @@ import java.util.logging.StreamHandler
 class RotatingFileHandler(
     private val baseFilePath: String,
     formatter: Formatter? = null,
-    level: Level = Level.INFO,
+    level: Level = Level.DEBUG,
     private var rotateAtSizeBytes: Int = 10 * 1024 * 1024, // 10 MBytes
     private val backupCount: Int = 5,
     private val rotateCheckIntervalMillis: Long = 1000 * 60 * 5, // 5 munites
