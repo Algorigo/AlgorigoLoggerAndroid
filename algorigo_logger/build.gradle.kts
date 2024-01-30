@@ -48,4 +48,5 @@ dependencies {
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.1")
 
     implementation("com.amazonaws:aws-android-sdk-s3:2.74.0")
+    implementation("com.amazonaws:aws-android-sdk-logs:2.74.0")
 }

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.algorigo.logger.handler.CloudWatchHandler
 import com.algorigo.logger.handler.RotatingFileHandler
 import com.algorigo.logger.ui.theme.AlgorigoLoggerTheme
 import com.amazonaws.regions.Region
@@ -46,6 +47,7 @@ class MainActivity : ComponentActivity() {
 
     private var compositeDisposable = CompositeDisposable()
     private lateinit var rotatingFileHandler: RotatingFileHandler
+    private lateinit var cloudWatchHandler: CloudWatchHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,10 +69,22 @@ class MainActivity : ComponentActivity() {
                         "/algorigo_logger_android-log-${filenameFormat.format(it.rotatedDate)}.log"
             }
         }
+        cloudWatchHandler = CloudWatchHandler(
+            this,
+            "/test/algorigo_logger_android",
+            "device_id",
+            accessKey,
+            secretKey,
+            region,
+            level = Level.VERBOSE,
+            logGroupRetentionDays = CloudWatchHandler.RetentionDays.day1,
+        ).also {
+            Logger.getLogger(Tag).addHandler(it)
+        }
 
-        Observable.interval(1, TimeUnit.SECONDS)
+        Observable.interval(0, 1, TimeUnit.SECONDS)
             .subscribe({
-                L.debug(Tag, "test $it")
+                L.info(Tag, "test $it")
             }, {
                 Log.e(LOG_TAG, "error", it)
             }).addTo(compositeDisposable)
