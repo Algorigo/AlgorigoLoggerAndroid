@@ -1,6 +1,8 @@
-package com.algorigo.logger
+package com.algorigo.logger.handler
 
 import android.content.Context
+import com.algorigo.logger.formatter.AlgorigoLogFormatter
+import com.algorigo.logger.Level
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Region
 import com.amazonaws.services.s3.AmazonS3Client

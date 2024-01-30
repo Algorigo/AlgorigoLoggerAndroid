@@ -1,4 +1,4 @@
-package com.algorigo.logger
+package com.algorigo.logger.formatter
 
 import java.util.Date
 import java.util.logging.Formatter
