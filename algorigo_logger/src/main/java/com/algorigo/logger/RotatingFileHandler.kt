@@ -104,7 +104,7 @@ class RotatingFileHandler(
         get() = _rotatedFileRelay.startWith(Observable.fromIterable(files))
     private var uploadDisposable: Disposable? = null
 
-    private val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_appender")
+    private val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_handler")
 
     init {
         setFormatter(formatter ?: AlgorigoLogFormatter())
