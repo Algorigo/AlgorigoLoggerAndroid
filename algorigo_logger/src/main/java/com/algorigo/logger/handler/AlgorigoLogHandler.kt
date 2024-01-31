@@ -24,6 +24,7 @@ class AlgorigoLogHandler(
 
     fun removeHandler(subHandler: Handler) {
         subHandlers.remove(subHandler)
+        subHandler.close()
     }
 
     override fun publish(record: LogRecord?) {
@@ -48,5 +49,6 @@ class AlgorigoLogHandler(
         subHandlers.toList().forEach {
             it.close()
         }
+        subHandlers.clear()
     }
 }

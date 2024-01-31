@@ -231,6 +231,12 @@ class RotatingFileHandler(
         }
     }
 
+    override fun close() {
+        super.close()
+        uploadDisposable?.dispose()
+        uploadDisposable = null
+    }
+
     fun setPostfix(logFile: LogFile, postfix: String): LogFile? {
         if (!File(logFile.path).exists()) {
             return null;
