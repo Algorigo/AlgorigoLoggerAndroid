@@ -31,8 +31,8 @@ import java.util.logging.Logger
 
 class CloudWatchHandler(
     context: Context,
-    logGroupName: String,
-    logStreamName: String,
+    logGroupNameSingle: Single<String>,
+    logStreamNameSingle: Single<String>,
     awsAccessKey: String,
     awsSecretKey: String,
     awsRegion: Region,
@@ -95,7 +95,8 @@ class CloudWatchHandler(
         maxBatchCount,
     )
     private val logNameRelay = BehaviorRelay.create<Pair<String, String>>()
-    private var disposable: Disposable? = null
+    private var initDisposable: Disposable? = null
+    private var uploadDisposable: Disposable? = null
     private val logRelay = ReplayRelay.create<InputLogEventExt>()
 
     val debugLogger = Logger.getLogger("algorigo_logger.cloud_watch_handler")
@@ -103,8 +104,58 @@ class CloudWatchHandler(
     init {
         setFormatter(formatter ?: TimelessLogFormatter())
         setLevel(level.level)
-        initCloudWatch(logGroupName, logStreamName, createLogGroup, logGroupRetentionDays, createLogStream)
+        initDisposable = Single.zip(logGroupNameSingle, logStreamNameSingle) { logGroupName, logStreamName ->
+            Pair(logGroupName, logStreamName)
+        }
+            .subscribeOn(Schedulers.io())
+            .flatMap {
+                initCloudWatch(it.first, it.second, createLogGroup, logGroupRetentionDays, createLogStream)
+                    .toSingleDefault(it)
+            }
+            .doFinally {
+                initDisposable = null
+            }
+            .subscribe({
+                logNameRelay.accept(it)
+                flush()
+            }, {})
     }
+
+    constructor(
+        context: Context,
+        logGroupName: String,
+        logStreamName: String,
+        awsAccessKey: String,
+        awsSecretKey: String,
+        awsRegion: Region,
+        formatter: Formatter? = null,
+        level: Level = Level.INFO,
+        useQueue: Boolean = true,
+        sendIntervalMillis: Long = 1000 * 60, // 1 minutes
+        maxQueueSize: Int = 1048576, // 1 MBytes
+        maxBatchCount: Int = 10000,
+        maxMessageSize: Int = 262114, // 256 KBytes
+        logGroupRetentionDays: RetentionDays = RetentionDays.month6,
+        createLogGroup: Boolean = true,
+        createLogStream: Boolean = true,
+    ) : this(
+        context,
+        Single.just(logGroupName),
+        Single.just(logStreamName),
+        awsAccessKey,
+        awsSecretKey,
+        awsRegion,
+        formatter,
+        level,
+        useQueue,
+        sendIntervalMillis,
+        maxQueueSize,
+        maxBatchCount,
+        maxMessageSize,
+        logGroupRetentionDays,
+        createLogGroup,
+        createLogStream,
+    )
 
     private fun initCloudWatch(
         logGroupName: String,
@@ -112,18 +163,13 @@ class CloudWatchHandler(
         createLogGroup: Boolean,
         retentionDays: RetentionDays,
         createLogStream: Boolean
-    ) {
-        ensureLogGroup(logGroupName, createLogGroup, retentionDays)
+    ): Completable {
+        return ensureLogGroup(logGroupName, createLogGroup, retentionDays)
             .andThen(ensureLogStream(logGroupName, logStreamName, createLogStream))
             .doOnError {
                 debugLogger.warning("initCloudWatch error: ${it.message}\n${it.stackTraceToString()}")
             }
             .retryWhen { it.delay(1, TimeUnit.MINUTES) }
-            .subscribe({
-                logNameRelay.accept(Pair(logGroupName, logStreamName))
-                flush()
-            }, {
-            })
     }
 
     private fun ensureLogGroup(
@@ -233,7 +279,7 @@ class CloudWatchHandler(
 
     private fun startLogBatchUpload() {
         var nextSequenceToken: String? = null
-        disposable = logNameRelay
+        uploadDisposable = logNameRelay
             .flatMapCompletable { (logGroupName, logStreamName) ->
                 logUploadStream.getOutputObservable()
                     .concatMapCompletable { output ->
@@ -248,7 +294,7 @@ class CloudWatchHandler(
                     }
             }
             .doFinally {
-                disposable = null
+                uploadDisposable = null
             }
             .subscribe({
                 debugLogger.warning("startLogBatchUpload complete")
@@ -259,7 +305,7 @@ class CloudWatchHandler(
 
     private fun startLogUpload() {
         var nextSequenceToken: String? = null
-        disposable = logNameRelay
+        uploadDisposable = logNameRelay
             .flatMapCompletable { (logGroupName, logStreamName) ->
                 logRelay
                     .concatMapCompletable { log ->
@@ -271,7 +317,7 @@ class CloudWatchHandler(
                     }
             }
             .doFinally {
-                disposable = null
+                uploadDisposable = null
             }
             .subscribe({
                 debugLogger.warning("startLogUpload complete")
@@ -293,12 +339,12 @@ class CloudWatchHandler(
         val inputLogEvent = InputLogEventExt(formatter.format(record), record.millis, maxMessageSize);
 
         if (useQueue) {
-            if (disposable == null) {
+            if (uploadDisposable == null) {
                 startLogBatchUpload()
             }
             logUploadStream.add(inputLogEvent)
         } else {
-            if (disposable == null) {
+            if (uploadDisposable == null) {
                 startLogUpload()
             }
             logRelay.accept(inputLogEvent)
@@ -309,6 +355,7 @@ class CloudWatchHandler(
     }
 
     override fun close() {
-        disposable?.dispose()
+        uploadDisposable?.dispose()
+        initDisposable?.dispose()
     }
 }
