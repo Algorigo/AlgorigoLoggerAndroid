@@ -1,7 +1,7 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
-import com.algorigo.logger.formatter.AlgorigoLogFormatter
+import com.algorigo.logger.formatter.TimedLogFormatter
 import com.algorigo.logger.Level
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Region
@@ -107,7 +107,7 @@ class RotatingFileHandler(
     private var uploadDisposable: Disposable? = null
 
     init {
-        setFormatter(formatter ?: AlgorigoLogFormatter())
+        setFormatter(formatter ?: TimedLogFormatter())
         setLevel(level.level)
         openFiles()
     }

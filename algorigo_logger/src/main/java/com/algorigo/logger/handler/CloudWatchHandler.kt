@@ -1,9 +1,8 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
-import android.util.Log
 import com.algorigo.logger.Level
-import com.algorigo.logger.formatter.AlgorigoLogFormatter
+import com.algorigo.logger.formatter.TimelessLogFormatter
 import com.algorigo.logger.util.InputLogEventExt
 import com.algorigo.logger.util.LogUploadStream
 import com.amazonaws.ClientConfiguration
@@ -102,7 +101,7 @@ class CloudWatchHandler(
     val debugLogger = Logger.getLogger("algorigo_logger.cloud_watch_handler")
 
     init {
-        setFormatter(formatter ?: AlgorigoLogFormatter())
+        setFormatter(formatter ?: TimelessLogFormatter())
         setLevel(level.level)
         initCloudWatch(logGroupName, logStreamName, createLogGroup, logGroupRetentionDays, createLogStream)
     }

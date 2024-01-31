@@ -1,9 +1,7 @@
 package com.algorigo.logger.handler
 
-import android.util.Log
 import com.algorigo.logger.Level
-import com.algorigo.logger.formatter.AlgorigoLogFormatter
-import java.text.SimpleDateFormat
+import com.algorigo.logger.formatter.TimedLogFormatter
 import java.util.logging.Formatter
 import java.util.logging.Handler
 import java.util.logging.LogRecord
@@ -16,7 +14,7 @@ class AlgorigoLogHandler(
     private val subHandlers = mutableListOf<Handler>()
 
     init {
-        setFormatter(formatter ?: AlgorigoLogFormatter())
+        setFormatter(formatter ?: TimedLogFormatter())
         setLevel(level.level)
     }
 
