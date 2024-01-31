@@ -140,8 +140,6 @@ internal class LogUploadStream(
         eventRelay.accept(Event.LogAddEvent(log))
     }
 
-    fun getBetween(from: String, to: String, sendIndex: Int) = logDatabase.selectBetween(from, to, sendIndex)
-
     fun delete(sendIndex: Int) {
         eventRelay.accept(Event.LogDeleteEvent(sendIndex))
     }
