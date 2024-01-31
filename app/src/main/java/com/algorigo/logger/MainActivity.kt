@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.algorigo.logger.handler.AlgorigoLogHandler
 import com.algorigo.logger.handler.CloudWatchHandler
 import com.algorigo.logger.handler.RotatingFileHandler
 import com.algorigo.logger.ui.theme.AlgorigoLoggerTheme
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private var compositeDisposable = CompositeDisposable()
+    private var algorigoLogHandler = AlgorigoLogHandler()
     private lateinit var rotatingFileHandler: RotatingFileHandler
     private lateinit var cloudWatchHandler: CloudWatchHandler
 
@@ -57,13 +59,14 @@ class MainActivity : ComponentActivity() {
             logDir.mkdirs()
         }
         Logger.getLogger(Tag).level = Level.VERBOSE.level
+        Logger.getLogger(Tag).addHandler(algorigoLogHandler)
         rotatingFileHandler = RotatingFileHandler(
             this,
             relativePath = "logs/log.txt",
             level = Level.VERBOSE,
             rotateAtSizeBytes = 100,
         ).also {
-            Logger.getLogger(Tag).addHandler(it)
+            algorigoLogHandler.addHandler(it)
             it.registerS3Uploader(accessKey, secretKey, region, "woon") {
                 "log_file/${pathFormat.format(it.rotatedDate)}" +
                         "/algorigo_logger_android-log-${filenameFormat.format(it.rotatedDate)}.log"
@@ -79,7 +82,7 @@ class MainActivity : ComponentActivity() {
             level = Level.VERBOSE,
             logGroupRetentionDays = CloudWatchHandler.RetentionDays.day1,
         ).also {
-            Logger.getLogger(Tag).addHandler(it)
+            algorigoLogHandler.addHandler(it)
         }
 
         Observable.interval(0, 1, TimeUnit.SECONDS)
