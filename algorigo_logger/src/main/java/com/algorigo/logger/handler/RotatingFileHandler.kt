@@ -106,8 +106,6 @@ class RotatingFileHandler(
         get() = _rotatedFileRelay.startWith(Observable.fromIterable(files))
     private var uploadDisposable: Disposable? = null
 
-    private val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_handler")
-
     init {
         setFormatter(formatter ?: AlgorigoLogFormatter())
         setLevel(level.level)
@@ -287,5 +285,9 @@ class RotatingFileHandler(
     fun unregisterUploader() {
         uploadDisposable?.dispose()
         uploadDisposable = null
+    }
+
+    companion object {
+        val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_handler")
     }
 }
