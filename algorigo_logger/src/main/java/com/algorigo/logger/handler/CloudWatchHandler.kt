@@ -357,5 +357,6 @@ class CloudWatchHandler(
     override fun close() {
         uploadDisposable?.dispose()
         initDisposable?.dispose()
+        logUploadStream.close()
     }
 }

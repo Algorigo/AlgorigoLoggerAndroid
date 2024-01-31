@@ -5,6 +5,7 @@ import android.util.Log
 import com.jakewharton.rxrelay3.PublishRelay
 import com.jakewharton.rxrelay3.ReplayRelay
 import io.reactivex.rxjava3.core.Single
+import io.reactivex.rxjava3.disposables.Disposable
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -29,9 +30,10 @@ internal class LogUploadStream(
     private val eventRelay = ReplayRelay.create<Event>()
     private val outputRelay = PublishRelay.create<Pair<Int, List<InputLogEventExt>>>()
     private val logDatabase = LogDatabase(context, retentionDays)
+    private var initializeDisposable: Disposable? = null
 
     init {
-        logDatabase.countAndSize()
+        initializeDisposable = logDatabase.countAndSize()
             .flatMapObservable { countAndSize ->
                 eventRelay
                     .concatMapSingle { event ->
@@ -108,6 +110,9 @@ internal class LogUploadStream(
                         Pair(event.third, logs)
                     }
             }
+            .doFinally {
+                initializeDisposable = null
+            }
             .subscribe({
                 outputRelay.accept(it)
             }, {
@@ -139,6 +144,11 @@ internal class LogUploadStream(
 
     fun delete(sendIndex: Int) {
         eventRelay.accept(Event.LogDeleteEvent(sendIndex))
+    }
+
+    fun close() {
+        initializeDisposable?.dispose()
+        logDatabase.close()
     }
 
     companion object {
