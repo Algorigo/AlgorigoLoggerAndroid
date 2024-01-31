@@ -1,5 +1,6 @@
 package com.algorigo.logger.formatter
 
+import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.logging.Formatter
 import java.util.logging.Level
@@ -9,7 +10,7 @@ class AlgorigoLogFormatter : Formatter() {
     override fun format(logRecord: LogRecord?): String {
         return logRecord?.let {
             val stringBuilder = StringBuilder()
-            stringBuilder.append("${Date(it.millis)} [${it.level?.toAlgorigoLevelName() ?: ""}:${it.loggerName}] ${it.message}\n")
+            stringBuilder.append("${formatter.format(Date(it.millis))} [${it.level?.toAlgorigoLevelName() ?: ""}:${it.loggerName}] ${it.message}\n")
             it.thrown?.let { throwable ->
                 stringBuilder.append("### ${throwable.javaClass.simpleName}: ${throwable.message}\n")
                 throwable.stackTrace.forEach { stackTraceElement ->
@@ -18,6 +19,10 @@ class AlgorigoLogFormatter : Formatter() {
             }
             stringBuilder.toString()
         } ?: ""
+    }
+
+    companion object {
+        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
     }
 }
 
