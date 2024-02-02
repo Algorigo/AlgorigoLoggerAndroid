@@ -174,11 +174,15 @@ private fun MainView(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .clickable {
-                        File(files[index])
-                            .readText()
-                            .let {
-                                onItemClicked(it)
-                            }
+                        try {
+                            File(files[index])
+                                .readText()
+                                .let {
+                                    onItemClicked(it)
+                                }
+                        } catch (e: Exception) {
+                            onItemClicked(e.message ?: "Unknown error")
+                        }
                     }) {
                     Text(text = files[index])
                 }
