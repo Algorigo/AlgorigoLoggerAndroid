@@ -54,12 +54,14 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        LogManager.initTags(LogTag)
+
         val logDir = File(filesDir, "log")
         if (!logDir.exists() || !logDir.isDirectory) {
             logDir.mkdirs()
         }
-        Logger.getLogger(Tag).level = Level.VERBOSE.level
-        Logger.getLogger(Tag).addHandler(algorigoLogHandler)
+        LogManager.getLogger(LogTag).level = Level.VERBOSE.level
+        LogManager.getLogger(LogTag).addHandler(algorigoLogHandler)
         rotatingFileHandler = RotatingFileHandler(
             this,
             relativePath = "logs/log.txt",
@@ -85,9 +87,11 @@ class MainActivity : ComponentActivity() {
             algorigoLogHandler.addHandler(it)
         }
 
+        L.debug(LogTag.Test.Test2, "test debug")
+        L.error(LogTag.Test3, "test error")
         Observable.interval(0, 1, TimeUnit.SECONDS)
             .subscribe({
-                L.info(Tag, "test $it")
+                L.info(LogTag.Test, "test info $it")
             }, {
                 Log.e(LOG_TAG, "error", it)
             }).addTo(compositeDisposable)
