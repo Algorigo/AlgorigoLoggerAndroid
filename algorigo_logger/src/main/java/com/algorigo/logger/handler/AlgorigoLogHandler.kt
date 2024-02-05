@@ -11,7 +11,9 @@ class AlgorigoLogHandler(
     level: Level = Level.DEBUG,
 ) : Handler() {
 
-    private val subHandlers = mutableListOf<Handler>()
+    private val _subHandlers = mutableListOf<Handler>()
+    val subHandlers: List<Handler>
+        get() = _subHandlers.toList()
 
     init {
         setFormatter(formatter ?: TimedLogFormatter())
@@ -19,11 +21,11 @@ class AlgorigoLogHandler(
     }
 
     fun addHandler(subHandler: Handler) {
-        subHandlers.add(subHandler)
+        _subHandlers.add(subHandler)
     }
 
     fun removeHandler(subHandler: Handler) {
-        subHandlers.remove(subHandler)
+        _subHandlers.remove(subHandler)
         subHandler.close()
     }
 
@@ -32,7 +34,7 @@ class AlgorigoLogHandler(
             return
         }
         flush()
-        subHandlers.toList().forEach {
+        _subHandlers.toList().forEach {
             if (it.level.intValue() <= (record?.level?.intValue() ?: Int.MAX_VALUE)) {
                 it.publish(record)
             }
@@ -40,15 +42,15 @@ class AlgorigoLogHandler(
     }
 
     override fun flush() {
-        subHandlers.toList().forEach {
+        _subHandlers.toList().forEach {
             it.flush()
         }
     }
 
     override fun close() {
-        subHandlers.toList().forEach {
+        _subHandlers.toList().forEach {
             it.close()
         }
-        subHandlers.clear()
+        _subHandlers.clear()
     }
 }
