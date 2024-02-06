@@ -71,6 +71,12 @@ class CloudWatchHandler(
         year8(2922),
         year9(3288),
         year10(3653);
+
+        companion object {
+            fun fromDays(days: Int): RetentionDays {
+                return values().sortedBy { it.days }.firstOrNull { it.days >= days } ?: year10
+            }
+        }
     }
 
     class LogGroupNotFoundException : RuntimeException()
