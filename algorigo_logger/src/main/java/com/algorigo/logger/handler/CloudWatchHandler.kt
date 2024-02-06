@@ -39,9 +39,9 @@ class CloudWatchHandler(
     formatter: Formatter? = null,
     level: Level = Level.INFO,
     private val useQueue: Boolean = true,
-    private val sendIntervalMillis: Long = 1000 * 60, // 1 minutes
+    sendIntervalMillis: Long = 1000 * 60, // 1 minutes
     maxQueueSize: Int = 1048576, // 1 MBytes
-    private val maxBatchCount: Int = 10000,
+    maxBatchCount: Int = 10000,
     private val maxMessageSize: Int = 262114, // 256 KBytes
     logGroupRetentionDays: RetentionDays = RetentionDays.month6,
     createLogGroup: Boolean = true,
