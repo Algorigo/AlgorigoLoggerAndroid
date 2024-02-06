@@ -2,7 +2,7 @@ package com.algorigo.logger.handler
 
 import android.util.Log
 import com.algorigo.logger.Level
-import com.algorigo.logger.formatter.TimelessLogFormatter
+import com.algorigo.logger.formatter.LogcatFormatter
 import java.util.logging.Formatter
 import java.util.logging.Handler
 import java.util.logging.LogRecord
@@ -12,7 +12,7 @@ class LogcatHandler(
     level: Level = Level.DEBUG,
 ) : Handler() {
     init {
-        setFormatter(formatter ?: TimelessLogFormatter())
+        setFormatter(formatter ?: LogcatFormatter())
         setLevel(level.level)
         flush()
     }
