@@ -288,6 +288,16 @@ class RotatingFileHandler(
             })
     }
 
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        regionString: String,
+        bucketName: String,
+        keyDelegate: (LogFile) -> String
+    ) {
+        return registerS3Uploader(accessKey, secretKey, Region.getRegion(regionString), bucketName, keyDelegate)
+    }
+
     fun unregisterUploader() {
         uploadDisposable?.dispose()
         uploadDisposable = null
