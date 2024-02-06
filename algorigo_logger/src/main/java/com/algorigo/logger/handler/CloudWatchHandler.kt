@@ -157,6 +157,78 @@ class CloudWatchHandler(
         createLogStream,
     )
 
+    constructor(
+        context: Context,
+        logGroupNameSingle: Single<String>,
+        logStreamNameSingle: Single<String>,
+        awsAccessKey: String,
+        awsSecretKey: String,
+        awsRegionString: String,
+        formatter: Formatter? = null,
+        level: Level = Level.INFO,
+        useQueue: Boolean = true,
+        sendIntervalMillis: Long = 1000 * 60, // 1 minutes
+        maxQueueSize: Int = 1048576, // 1 MBytes
+        maxBatchCount: Int = 10000,
+        maxMessageSize: Int = 262114, // 256 KBytes
+        logGroupRetentionDays: RetentionDays = RetentionDays.month6,
+        createLogGroup: Boolean = true,
+        createLogStream: Boolean = true,
+    ) : this(
+        context,
+        logGroupNameSingle,
+        logStreamNameSingle,
+        awsAccessKey,
+        awsSecretKey,
+        Region.getRegion(awsRegionString),
+        formatter,
+        level,
+        useQueue,
+        sendIntervalMillis,
+        maxQueueSize,
+        maxBatchCount,
+        maxMessageSize,
+        logGroupRetentionDays,
+        createLogGroup,
+        createLogStream,
+    )
+
+    constructor(
+        context: Context,
+        logGroupName: String,
+        logStreamName: String,
+        awsAccessKey: String,
+        awsSecretKey: String,
+        awsRegionString: String,
+        formatter: Formatter? = null,
+        level: Level = Level.INFO,
+        useQueue: Boolean = true,
+        sendIntervalMillis: Long = 1000 * 60, // 1 minutes
+        maxQueueSize: Int = 1048576, // 1 MBytes
+        maxBatchCount: Int = 10000,
+        maxMessageSize: Int = 262114, // 256 KBytes
+        logGroupRetentionDays: RetentionDays = RetentionDays.month6,
+        createLogGroup: Boolean = true,
+        createLogStream: Boolean = true,
+    ) : this(
+        context,
+        Single.just(logGroupName),
+        Single.just(logStreamName),
+        awsAccessKey,
+        awsSecretKey,
+        Region.getRegion(awsRegionString),
+        formatter,
+        level,
+        useQueue,
+        sendIntervalMillis,
+        maxQueueSize,
+        maxBatchCount,
+        maxMessageSize,
+        logGroupRetentionDays,
+        createLogGroup,
+        createLogStream,
+    )
+
     private fun initCloudWatch(
         logGroupName: String,
         logStreamName: String,
