@@ -1,8 +1,10 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
+import android.util.Log
 import com.algorigo.logger.formatter.TimedLogFormatter
 import com.algorigo.logger.Level
+import com.algorigo.logger.util.KeyFormat
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Region
 import com.amazonaws.services.s3.AmazonS3Client
@@ -265,8 +267,13 @@ class RotatingFileHandler(
         uploadDisposable = Single.fromCallable {
             val credentials = BasicAWSCredentials(accessKey, secretKey)
             AmazonS3Client(credentials, region)
-        }.subscribeOn(Schedulers.io()).flatMapCompletable { client ->
-                rotatedFileObservable.filter { it.postfix.isEmpty() }.flatMapCompletable {
+        }
+            .subscribeOn(Schedulers.io())
+            .flatMapCompletable { client ->
+                rotatedFileObservable
+                    .subscribeOn(Schedulers.io())
+                    .filter { it.postfix.isEmpty() }
+                    .flatMapCompletable {
                         Single.fromCallable {
                             val file = File(it.path)
                             if (!file.exists()) {
@@ -274,18 +281,32 @@ class RotatingFileHandler(
                             }
                             val key = keyDelegate(it)
                             client.putObject(bucketName, key, file)
-                        }.retryWhen { observable ->
+                        }
+                            .retryWhen { observable ->
                                 observable.doOnNext {
-                                        if (it is FileNotFoundException) {
-                                            throw it
-                                        }
-                                    }.delay(1, TimeUnit.MINUTES)
-                            }.ignoreElement().doOnComplete { setPostfix(it, "s3") }
+                                    if (it is FileNotFoundException) {
+                                        throw it
+                                    }
+                                }.delay(1, TimeUnit.MINUTES)
+                            }
+                            .ignoreElement()
+                            .doOnComplete { setPostfix(it, "s3") }
                             .onErrorComplete()
                     }
-            }.subscribe({}, {
+            }
+            .subscribe({}, {
                 debugLogger.warning("registerS3Uploader error : $it")
             })
+    }
+
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        region: Region,
+        bucketName: String,
+        keyFormat: KeyFormat
+    ) = registerS3Uploader(accessKey, secretKey, region, bucketName) {
+        keyFormat.format(it.rotatedDate)
     }
 
     fun registerS3Uploader(
@@ -294,9 +315,27 @@ class RotatingFileHandler(
         regionString: String,
         bucketName: String,
         keyDelegate: (LogFile) -> String
-    ) {
-        return registerS3Uploader(accessKey, secretKey, Region.getRegion(regionString), bucketName, keyDelegate)
-    }
+    ) = registerS3Uploader(
+        accessKey,
+        secretKey,
+        Region.getRegion(regionString),
+        bucketName,
+        keyDelegate
+    )
+
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        region: String,
+        bucketName: String,
+        keyFormat: KeyFormat
+    ) = registerS3Uploader(
+        accessKey,
+        secretKey,
+        Region.getRegion(region),
+        bucketName,
+        keyFormat
+    )
 
     fun unregisterUploader() {
         uploadDisposable?.dispose()
