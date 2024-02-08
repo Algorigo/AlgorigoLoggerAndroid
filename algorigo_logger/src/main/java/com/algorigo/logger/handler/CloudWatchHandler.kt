@@ -96,7 +96,7 @@ class CloudWatchHandler(
     private val logUploadStream = LogUploadStream(
         context,
         logGroupRetentionDays.days,
-        sendIntervalMillis,
+        if (sendIntervalMillis < 10000) 10000 else sendIntervalMillis,
         maxQueueSize,
         maxBatchCount,
     )
