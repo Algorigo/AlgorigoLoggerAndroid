@@ -74,61 +74,49 @@ class LogDatabase(
         from: String,
         to: String,
         sendIndex: Int
-    ): Single<List<InputLogEventExt>> = Single.just(writableDatabase)
-        .flatMap { db ->
-            Completable.fromCallable {
-                db.beginTransaction()
-            }
-                .andThen(
-                    Single.fromCallable {
-                        db.query(
-                            TABLE_NAME,
-                            arrayOf(COLUMN_ID, COLUMN_MESSAGE, COLUMN_TIMESTAMP),
-                            "$COLUMN_CREATED_AT BETWEEN ? AND ? AND $COLUMN_SEND_INDEX = ?",
-                            arrayOf(from, to, "0"),
-                            null,
-                            null,
-                            "$COLUMN_TIMESTAMP ASC"
-                        ).let {
-                            val maps = mutableListOf<Map<String, Any>>()
-                            while (it.moveToNext()) {
-                                maps.add(
-                                    mapOf(
-                                        COLUMN_ID to it.getLong(0),
-                                        COLUMN_MESSAGE to it.getString(1),
-                                        COLUMN_TIMESTAMP to it.getLong(2),
-                                    )
-                                )
-                            }
-                            it.close()
-                            maps
-                        }
-                    }
+    ): Single<List<InputLogEventExt>> = Single.fromCallable {
+        readableDatabase.query(
+            TABLE_NAME,
+            arrayOf(COLUMN_ID, COLUMN_MESSAGE, COLUMN_TIMESTAMP),
+            "$COLUMN_CREATED_AT BETWEEN ? AND ? AND $COLUMN_SEND_INDEX = ?",
+            arrayOf(from, to, "0"),
+            null,
+            null,
+            "$COLUMN_TIMESTAMP ASC"
+        ).let {
+            val maps = mutableListOf<Map<String, Any>>()
+            while (it.moveToNext()) {
+                maps.add(
+                    mapOf(
+                        COLUMN_ID to it.getLong(0),
+                        COLUMN_MESSAGE to it.getString(1),
+                        COLUMN_TIMESTAMP to it.getLong(2),
+                    )
                 )
-                .flatMap {
-                    Completable.fromCallable {
-                        db.update(
-                            TABLE_NAME,
-                            ContentValues().apply {
-                                put(COLUMN_SEND_INDEX, sendIndex)
-                            },
-                            "$COLUMN_ID IN (${it.map { it[COLUMN_ID] }.joinToString(",")})",
-                            null
-                        )
-                    }
-                        .toSingleDefault(it)
-                }
-                .map {
+            }
+            it.close()
+            maps
+        }
+    }
+        .flatMap {
+            Completable.fromCallable {
+                writableDatabase.update(
+                    TABLE_NAME,
+                    ContentValues().apply {
+                        put(COLUMN_SEND_INDEX, sendIndex)
+                    },
+                    "$COLUMN_ID IN (${it.map { it[COLUMN_ID] }.joinToString(",")})",
+                    null
+                )
+            }
+                .toSingleDefault(
                     it.map {
                         InputLogEventExt(
                             it[COLUMN_MESSAGE] as String,
                             it[COLUMN_TIMESTAMP] as Long
                         )
                     }
-                }
-                .doFinally {
-                    db.endTransaction()
-                }
+                )
         }
 
     internal fun delete(sendIndex: Int) = Completable.fromCallable {
