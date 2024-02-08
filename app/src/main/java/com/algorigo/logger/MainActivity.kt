@@ -91,7 +91,7 @@ class MainActivity : ComponentActivity() {
 
         L.debug(LogTag.Test.Test2, "test debug")
         L.error(LogTag.Test3, "test error")
-        Observable.interval(0, 1, TimeUnit.SECONDS)
+        Observable.interval(0, 5, TimeUnit.SECONDS)
             .subscribe({
                 L.info(LogTag.Test, "test info $it")
             }, {
