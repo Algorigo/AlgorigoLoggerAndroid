@@ -1,7 +1,6 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
-import android.util.Log
 import com.algorigo.logger.formatter.TimedLogFormatter
 import com.algorigo.logger.Level
 import com.algorigo.logger.util.KeyFormat

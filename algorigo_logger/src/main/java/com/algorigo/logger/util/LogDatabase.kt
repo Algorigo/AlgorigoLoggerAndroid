@@ -4,10 +4,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import android.util.Log
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
-import io.reactivex.rxjava3.subjects.BehaviorSubject
 import java.util.Date
 
 class LogDatabase(
@@ -37,7 +35,7 @@ class LogDatabase(
         database?.also {
             val retentionTimestamp = Date().time - retentionDays * 24 * 60 * 60 * 1000
             deleteBefore(it, retentionTimestamp)
-            updateAllSEndIndexZero(it)
+            updateAllSendIndexZero(it)
         }
     }
 
@@ -166,7 +164,7 @@ class LogDatabase(
         )
     }
 
-    private fun updateAllSEndIndexZero(database: SQLiteDatabase) {
+    private fun updateAllSendIndexZero(database: SQLiteDatabase) {
         database.update(
             TABLE_NAME,
             ContentValues().apply {
