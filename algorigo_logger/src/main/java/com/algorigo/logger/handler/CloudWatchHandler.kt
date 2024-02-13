@@ -48,7 +48,7 @@ class CloudWatchHandler(
     createLogStream: Boolean = true,
 ) : Handler() {
 
-    enum class RetentionDays(internal val days: Int) {
+    enum class RetentionDays(val days: Int) {
         day1(1),
         day3(3),
         day5(5),
