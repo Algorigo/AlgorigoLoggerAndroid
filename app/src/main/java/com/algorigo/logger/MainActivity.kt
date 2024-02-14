@@ -90,8 +90,13 @@ class MainActivity : ComponentActivity() {
             algorigoLogHandler.addHandler(it)
         }
 
+        L.info(LogTag, "test info 1")
+        L.info(LogTag.Test, "test info 2")
         L.debug(LogTag.Test.Test2, "test debug")
-        L.error(LogTag.Test3, "test error")
+        L.info(LogTag.Test, "test info")
+        L.warning(LogTag.Test3, "test warning")
+        L.error(LogTag.Test3, "test error", RuntimeException("Test Error"))
+        L.asserts(LogTag, "test assert", RuntimeException("Test Assert"))
         Observable.interval(0, 5, TimeUnit.SECONDS)
             .subscribe({
                 L.info(LogTag.Test, "test info $it")
