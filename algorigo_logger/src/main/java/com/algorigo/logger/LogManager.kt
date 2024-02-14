@@ -1,6 +1,7 @@
 package com.algorigo.logger
 
 import android.util.Log
+import androidx.annotation.IntRange
 
 open class Tag {
 
@@ -77,35 +78,42 @@ object LogManager {
 }
 
 object L {
-    fun log(level: Level, tag: Tag, message: String) {
-        LogManager.getLogger(tag).log(level.level, message)
+    fun log(level: Level, tag: Tag, message: String, throwable: Throwable? = null) {
+        LogManager.getLogger(tag).log(level.level, message, throwable)
     }
 
-    fun verbose(tag: Tag, message: String) {
-        log(Level.VERBOSE, tag, message)
+    fun verbose(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.VERBOSE, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun debug(tag: Tag, message: String) {
-        log(Level.DEBUG, tag, message)
+    fun debug(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.DEBUG, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun info(tag: Tag, message: String) {
-        log(Level.INFO, tag, message)
+    fun info(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.INFO, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun notice(tag: Tag, message: String) {
-        log(Level.NOTICE, tag, message)
+    fun notice(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.NOTICE, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun warning(tag: Tag, message: String) {
-        log(Level.WARNING, tag, message)
+    fun warning(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.WARNING, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun error(tag: Tag, message: String) {
-        log(Level.ERROR, tag, message)
+    fun error(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.ERROR, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 
-    fun asserts(tag: Tag, message: String) {
-        log(Level.ASSERTS, tag, message)
+    fun asserts(tag: Tag, message: String, throwable: Throwable? = null, @IntRange(from = 0L) depth: Int = 0) {
+        val frame = Exception().stackTrace[depth + 2]
+        log(Level.ASSERTS, tag, "$message (${frame.fileName}:${frame.lineNumber})", throwable)
     }
 }
