@@ -30,8 +30,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.algorigo.logger.handler.AlgorigoLogHandler
+import com.algorigo.logger.handler.AndroidHandler
 import com.algorigo.logger.handler.CloudWatchHandler
-import com.algorigo.logger.handler.LogcatHandler
 import com.algorigo.logger.handler.RotatingFileHandler
 import com.algorigo.logger.ui.theme.AlgorigoLoggerTheme
 import com.amazonaws.regions.Region
@@ -61,9 +61,10 @@ class MainActivity : ComponentActivity() {
         if (!logDir.exists() || !logDir.isDirectory) {
             logDir.mkdirs()
         }
+        LogManager.removeRootAndroidHandler()
         LogManager.getLogger(LogTag).level = Level.VERBOSE.level
         LogManager.getLogger(LogTag).addHandler(algorigoLogHandler)
-        algorigoLogHandler.addHandler(LogcatHandler(level = Level.VERBOSE))
+        algorigoLogHandler.addHandler(AndroidHandler(Level.VERBOSE))
         rotatingFileHandler = RotatingFileHandler(
             this,
             relativePath = "logs/log.txt",

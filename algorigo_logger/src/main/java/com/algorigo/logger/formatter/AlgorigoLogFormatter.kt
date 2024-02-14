@@ -42,22 +42,6 @@ class TimelessLogFormatter : Formatter() {
     }
 }
 
-class LogcatFormatter : Formatter() {
-    override fun format(logRecord: LogRecord?): String {
-        return logRecord?.let {
-            val stringBuilder = StringBuilder()
-            stringBuilder.append("${it.message}\n")
-            it.thrown?.let { throwable ->
-                stringBuilder.append("### ${throwable.javaClass.simpleName}: ${throwable.message}\n")
-                throwable.stackTrace.forEach { stackTraceElement ->
-                    stringBuilder.append("### ${stackTraceElement.className}.${stackTraceElement.methodName}(${stackTraceElement.fileName}:${stackTraceElement.lineNumber})\n")
-                }
-            }
-            stringBuilder.toString()
-        } ?: ""
-    }
-}
-
 fun Level.toAlgorigoLevelName(): String {
     return when (this) {
         Level.FINE -> "DEBUG"

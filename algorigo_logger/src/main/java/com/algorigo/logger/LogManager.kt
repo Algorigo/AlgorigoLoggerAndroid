@@ -75,6 +75,15 @@ object LogManager {
             loggerMap[tag] = it
         })
     }
+
+    fun removeRootAndroidHandler() {
+        val rootLogger = java.util.logging.Logger.getLogger("")
+        rootLogger.handlers.forEach {
+            if (it.javaClass.simpleName == "AndroidHandler") {
+                rootLogger.removeHandler(it)
+            }
+        }
+    }
 }
 
 object L {
