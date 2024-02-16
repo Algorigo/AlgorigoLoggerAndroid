@@ -1,6 +1,9 @@
-package com.algorigo.logger
+package com.algorigo.logger.handler
 
 import android.content.Context
+import com.algorigo.logger.formatter.TimedLogFormatter
+import com.algorigo.logger.Level
+import com.algorigo.logger.util.KeyFormat
 import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Region
 import com.amazonaws.services.s3.AmazonS3Client
@@ -30,7 +33,7 @@ import java.util.logging.StreamHandler
 class RotatingFileHandler(
     private val baseFilePath: String,
     formatter: Formatter? = null,
-    level: Level = Level.INFO,
+    level: Level = Level.DEBUG,
     private var rotateAtSizeBytes: Int = 10 * 1024 * 1024, // 10 MBytes
     private val backupCount: Int = 5,
     private val rotateCheckIntervalMillis: Long = 1000 * 60 * 5, // 5 munites
@@ -104,10 +107,8 @@ class RotatingFileHandler(
         get() = _rotatedFileRelay.startWith(Observable.fromIterable(files))
     private var uploadDisposable: Disposable? = null
 
-    private val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_appender")
-
     init {
-        setFormatter(formatter ?: AlgorigoLogFormatter())
+        setFormatter(formatter ?: TimedLogFormatter())
         setLevel(level.level)
         openFiles()
     }
@@ -231,6 +232,12 @@ class RotatingFileHandler(
         }
     }
 
+    override fun close() {
+        super.close()
+        uploadDisposable?.dispose()
+        uploadDisposable = null
+    }
+
     fun setPostfix(logFile: LogFile, postfix: String): LogFile? {
         if (!File(logFile.path).exists()) {
             return null;
@@ -259,8 +266,13 @@ class RotatingFileHandler(
         uploadDisposable = Single.fromCallable {
             val credentials = BasicAWSCredentials(accessKey, secretKey)
             AmazonS3Client(credentials, region)
-        }.subscribeOn(Schedulers.io()).flatMapCompletable { client ->
-                rotatedFileObservable.filter { it.postfix.isEmpty() }.flatMapCompletable {
+        }
+            .subscribeOn(Schedulers.io())
+            .flatMapCompletable { client ->
+                rotatedFileObservable
+                    .subscribeOn(Schedulers.io())
+                    .filter { it.postfix.isEmpty() }
+                    .flatMapCompletable {
                         Single.fromCallable {
                             val file = File(it.path)
                             if (!file.exists()) {
@@ -268,22 +280,68 @@ class RotatingFileHandler(
                             }
                             val key = keyDelegate(it)
                             client.putObject(bucketName, key, file)
-                        }.retryWhen { observable ->
+                        }
+                            .retryWhen { observable ->
                                 observable.doOnNext {
-                                        if (it is FileNotFoundException) {
-                                            throw it
-                                        }
-                                    }.delay(1, TimeUnit.MINUTES)
-                            }.ignoreElement().doOnComplete { setPostfix(it, "s3") }
+                                    if (it is FileNotFoundException) {
+                                        throw it
+                                    }
+                                }.delay(1, TimeUnit.MINUTES)
+                            }
+                            .ignoreElement()
+                            .doOnComplete { setPostfix(it, "s3") }
                             .onErrorComplete()
                     }
-            }.subscribe({}, {
+            }
+            .subscribe({}, {
                 debugLogger.warning("registerS3Uploader error : $it")
             })
     }
 
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        region: Region,
+        bucketName: String,
+        keyFormat: KeyFormat
+    ) = registerS3Uploader(accessKey, secretKey, region, bucketName) {
+        keyFormat.format(it.rotatedDate)
+    }
+
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        regionString: String,
+        bucketName: String,
+        keyDelegate: (LogFile) -> String
+    ) = registerS3Uploader(
+        accessKey,
+        secretKey,
+        Region.getRegion(regionString),
+        bucketName,
+        keyDelegate
+    )
+
+    fun registerS3Uploader(
+        accessKey: String,
+        secretKey: String,
+        region: String,
+        bucketName: String,
+        keyFormat: KeyFormat
+    ) = registerS3Uploader(
+        accessKey,
+        secretKey,
+        Region.getRegion(region),
+        bucketName,
+        keyFormat
+    )
+
     fun unregisterUploader() {
         uploadDisposable?.dispose()
         uploadDisposable = null
+    }
+
+    companion object {
+        val debugLogger = Logger.getLogger("algorigo_logger.rotating_file_handler")
     }
 }

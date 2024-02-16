@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,8 +19,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -32,6 +29,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.algorigo.logger.handler.AlgorigoLogHandler
+import com.algorigo.logger.handler.AndroidHandler
+import com.algorigo.logger.handler.CloudWatchHandler
+import com.algorigo.logger.handler.RotatingFileHandler
 import com.algorigo.logger.ui.theme.AlgorigoLoggerTheme
 import com.amazonaws.regions.Region
 import com.amazonaws.regions.Regions
@@ -47,32 +48,58 @@ import java.util.concurrent.TimeUnit
 class MainActivity : ComponentActivity() {
 
     private var compositeDisposable = CompositeDisposable()
+    private var algorigoLogHandler = AlgorigoLogHandler()
     private lateinit var rotatingFileHandler: RotatingFileHandler
+    private lateinit var cloudWatchHandler: CloudWatchHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        LogManager.initTags(LogTag)
 
         val logDir = File(filesDir, "log")
         if (!logDir.exists() || !logDir.isDirectory) {
             logDir.mkdirs()
         }
-        Logger.getLogger(Tag).level = Level.VERBOSE.level
+        LogManager.removeRootAndroidHandler()
+        LogManager.getLogger(LogTag).level = Level.VERBOSE.level
+        LogManager.getLogger(LogTag).addHandler(algorigoLogHandler)
+        algorigoLogHandler.addHandler(AndroidHandler(Level.VERBOSE))
         rotatingFileHandler = RotatingFileHandler(
             this,
             relativePath = "logs/log.txt",
             level = Level.VERBOSE,
             rotateAtSizeBytes = 100,
         ).also {
-            Logger.getLogger(Tag).addHandler(it)
+            algorigoLogHandler.addHandler(it)
             it.registerS3Uploader(accessKey, secretKey, region, "woon") {
                 "log_file/${pathFormat.format(it.rotatedDate)}" +
                         "/algorigo_logger_android-log-${filenameFormat.format(it.rotatedDate)}.log"
             }
         }
+        cloudWatchHandler = CloudWatchHandler(
+            this,
+            "/test/algorigo_logger_android",
+            "device_id",
+            accessKey,
+            secretKey,
+            region,
+            level = Level.VERBOSE,
+            logGroupRetentionDays = CloudWatchHandler.RetentionDays.day1,
+        ).also {
+            algorigoLogHandler.addHandler(it)
+        }
 
-        Observable.interval(1, TimeUnit.SECONDS)
+        L.info(LogTag, "test info 1")
+        L.info(LogTag.Test, "test info 2")
+        L.debug(LogTag.Test.Test2, "test debug")
+        L.info(LogTag.Test, "test info")
+        L.warning(LogTag.Test3, "test warning")
+        L.error(LogTag.Test3, "test error", RuntimeException("Test Error"))
+        L.asserts(LogTag, "test assert", RuntimeException("Test Assert"))
+        Observable.interval(0, 5, TimeUnit.SECONDS)
             .subscribe({
-                L.debug(Tag, "test $it")
+                L.info(LogTag.Test, "test info $it")
             }, {
                 Log.e(LOG_TAG, "error", it)
             }).addTo(compositeDisposable)
@@ -155,11 +182,15 @@ private fun MainView(
                     .fillMaxWidth()
                     .padding(16.dp)
                     .clickable {
-                        File(files[index])
-                            .readText()
-                            .let {
-                                onItemClicked(it)
-                            }
+                        try {
+                            File(files[index])
+                                .readText()
+                                .let {
+                                    onItemClicked(it)
+                                }
+                        } catch (e: Exception) {
+                            onItemClicked(e.message ?: "Unknown error")
+                        }
                     }) {
                     Text(text = files[index])
                 }
