@@ -129,10 +129,25 @@ class AndroidHandler(level: Level = Level.DEBUG) : Handler() {
             if (length <= 23) {
                 return loggerName
             }
+            var firstPeriod = loggerName.indexOf(".")
             val lastPeriod = loggerName.lastIndexOf(".")
-            return if (length - (lastPeriod + 1) <= 23) loggerName.substring(lastPeriod + 1) else loggerName.substring(
-                loggerName.length - 23
-            )
+            return if (firstPeriod == -1) {
+                loggerName.substring(loggerName.length - 23)
+            } else if (firstPeriod == lastPeriod) {
+                loggerName.substring(0, 23)
+            } else {
+                val splitted = loggerName.split(".").toMutableList()
+                for (index in 0 until splitted.size) {
+                    splitted[index] = splitted[index].substring(0, 1)
+                    val merged = splitted.joinToString(".")
+                    if (merged.length <= 23) {
+                        return merged
+                    }
+                }
+                return if (length - (lastPeriod + 1) <= 23) loggerName.substring(lastPeriod + 1) else loggerName.substring(
+                    loggerName.length - 23
+                )
+            }
         }
     }
 }
