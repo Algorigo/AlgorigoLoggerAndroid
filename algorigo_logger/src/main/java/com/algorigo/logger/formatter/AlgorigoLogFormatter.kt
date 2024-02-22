@@ -2,6 +2,7 @@ package com.algorigo.logger.formatter
 
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.TimeZone
 import java.util.logging.Formatter
 import java.util.logging.Level
 import java.util.logging.LogRecord
@@ -22,7 +23,9 @@ class TimedLogFormatter : Formatter() {
     }
 
     companion object {
-        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+        val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss").apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     }
 }
 

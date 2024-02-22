@@ -22,6 +22,7 @@ import java.security.AccessController
 import java.security.PrivilegedAction
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import java.util.logging.ErrorManager
 import java.util.logging.Formatter
@@ -88,7 +89,9 @@ class RotatingFileHandler(
         }
 
         companion object {
-            private val format = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
+            private val format = SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
 
             fun fromPath(path: String, base: String): LogFile? {
                 return Regex("(\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2})(.*)$").find(path)?.let {

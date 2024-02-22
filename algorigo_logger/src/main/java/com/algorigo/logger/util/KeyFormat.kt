@@ -6,6 +6,7 @@ import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 
 class KeyFormat(pattern: String, private val locale: Locale = Locale.getDefault()) : DateFormat() {
@@ -49,5 +50,16 @@ class KeyFormat(pattern: String, private val locale: Locale = Locale.getDefault(
             dateBuilder.append(match)
         }
         return dateOnlyFormat.parse(dateBuilder.toString())
+    }
+
+    override fun getTimeZone(): TimeZone {
+        return dateOnlyFormat.timeZone
+    }
+
+    override fun setTimeZone(timeZone: TimeZone) {
+        formats.forEach {
+            it.timeZone = timeZone
+        }
+        dateOnlyFormat.timeZone = timeZone
     }
 }
