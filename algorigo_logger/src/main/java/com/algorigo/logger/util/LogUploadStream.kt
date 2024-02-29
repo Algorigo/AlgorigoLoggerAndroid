@@ -94,7 +94,7 @@ internal class LogUploadStream(
                                 if (index >= 0) {
                                     logBatches.removeAt(index)
                                 } else {
-                                    logBatches = mutableListOf(Triple(countAndSize, Pair("", ""), 0))
+                                    logBatches = mutableListOf(Triple(Pair(result.restCount, result.restSize), Pair("", ""), 0))
                                 }
                                 Pair(logBatches, null)
                             }
