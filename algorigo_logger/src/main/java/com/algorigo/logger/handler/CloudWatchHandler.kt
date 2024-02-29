@@ -17,7 +17,6 @@ import com.amazonaws.services.logs.model.DescribeLogStreamsRequest
 import com.amazonaws.services.logs.model.InvalidSequenceTokenException
 import com.amazonaws.services.logs.model.PutLogEventsRequest
 import com.amazonaws.services.logs.model.PutRetentionPolicyRequest
-import com.jakewharton.rxrelay3.BehaviorRelay
 import com.jakewharton.rxrelay3.ReplayRelay
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.core.Single
@@ -38,7 +37,7 @@ class CloudWatchHandler(
     awsRegion: Region,
     formatter: Formatter? = null,
     level: Level = Level.INFO,
-    private val useQueue: Boolean = true,
+    useQueue: Boolean = true,
     sendIntervalMillis: Long = 1000 * 60, // 1 minutes
     maxQueueSize: Int = 1048576, // 1 MBytes
     maxBatchCount: Int = 10000,
@@ -93,23 +92,30 @@ class CloudWatchHandler(
         setRegion(awsRegion)
     }
 
-    private val logUploadStream = LogUploadStream(
-        context,
-        logGroupRetentionDays.days,
-        if (sendIntervalMillis < 10000) 10000 else sendIntervalMillis,
-        maxQueueSize,
-        maxBatchCount,
-    )
-    private val logNameRelay = BehaviorRelay.create<Pair<String, String>>()
+    private var logUploadStream: LogUploadStream? = null
     private var initDisposable: Disposable? = null
-    private var uploadDisposable: Disposable? = null
     private val logRelay = ReplayRelay.create<InputLogEventExt>()
+    private lateinit var logDelegate: (InputLogEventExt) -> Unit
 
     val debugLogger = Logger.getLogger("algorigo_logger.cloud_watch_handler")
 
     init {
         setFormatter(formatter ?: TimelessLogFormatter())
         setLevel(level.level)
+
+        if (useQueue) {
+            logUploadStream = LogUploadStream(
+                context,
+                logGroupRetentionDays.days,
+                if (sendIntervalMillis < 10000) 10000 else sendIntervalMillis,
+                maxQueueSize,
+                maxBatchCount,
+            )
+            logDelegate = logUploadStream!!::add
+        } else {
+            logDelegate = logRelay::accept
+        }
+
         initDisposable = Single.zip(logGroupNameSingle, logStreamNameSingle) { logGroupName, logStreamName ->
             Pair(logGroupName, logStreamName)
         }
@@ -118,13 +124,20 @@ class CloudWatchHandler(
                 initCloudWatch(it.first, it.second, createLogGroup, logGroupRetentionDays, createLogStream)
                     .toSingleDefault(it)
             }
+            .flatMapCompletable {
+                flush()
+                if (useQueue) {
+                    getLogBatchUpload(it.first, it.second)
+                } else {
+                    getLogUpload(it.first, it.second)
+                }
+            }
             .doFinally {
                 initDisposable = null
             }
             .subscribe({
-                logNameRelay.accept(it)
-                flush()
-            }, {})
+            }, {
+            })
     }
 
     constructor(
@@ -355,53 +368,31 @@ class CloudWatchHandler(
             }
     }
 
-    private fun startLogBatchUpload() {
+    private fun getLogBatchUpload(logGroupName: String, logStreamName: String): Completable {
         var nextSequenceToken: String? = null
-        uploadDisposable = logNameRelay
-            .flatMapCompletable { (logGroupName, logStreamName) ->
-                logUploadStream.getOutputObservable()
-                    .concatMapCompletable { output ->
-                        submitLogs(logGroupName, logStreamName, output.second, nextSequenceToken)
-                            .doOnSuccess {
-                                nextSequenceToken = it.second
-                                if (it.first) {
-                                    logUploadStream.delete(output.first)
-                                }
-                            }
-                            .ignoreElement()
+        return logUploadStream!!.getOutputObservable()
+            .concatMapCompletable { output ->
+                submitLogs(logGroupName, logStreamName, output.second, nextSequenceToken)
+                    .doOnSuccess {
+                        nextSequenceToken = it.second
+                        if (it.first) {
+                            logUploadStream!!.delete(output.first)
+                        }
                     }
+                    .ignoreElement()
             }
-            .doFinally {
-                uploadDisposable = null
-            }
-            .subscribe({
-                debugLogger.warning("startLogBatchUpload complete")
-            }, {
-                debugLogger.warning("startLogBatchUpload error: ${it.message}\n${it.stackTraceToString()}")
-            })
     }
 
-    private fun startLogUpload() {
+    private fun getLogUpload(logGroupName: String, logStreamName: String): Completable {
         var nextSequenceToken: String? = null
-        uploadDisposable = logNameRelay
-            .flatMapCompletable { (logGroupName, logStreamName) ->
-                logRelay
-                    .concatMapCompletable { log ->
-                        submitLogs(logGroupName, logStreamName, listOf(log), nextSequenceToken)
-                            .doOnSuccess {
-                                nextSequenceToken = it.second
-                            }
-                            .ignoreElement()
+        return logRelay
+            .concatMapCompletable { log ->
+                submitLogs(logGroupName, logStreamName, listOf(log), nextSequenceToken)
+                    .doOnSuccess {
+                        nextSequenceToken = it.second
                     }
+                    .ignoreElement()
             }
-            .doFinally {
-                uploadDisposable = null
-            }
-            .subscribe({
-                debugLogger.warning("startLogUpload complete")
-            }, {
-                debugLogger.warning("startLogUpload error: ${it.message}\n${it.stackTraceToString()}")
-            })
     }
 
     override fun publish(record: LogRecord?) {
@@ -414,27 +405,15 @@ class CloudWatchHandler(
             return
         }
 
-        val inputLogEvent = InputLogEventExt(formatter.format(record), record.millis, maxMessageSize);
-
-        if (useQueue) {
-            if (uploadDisposable == null) {
-                startLogBatchUpload()
-            }
-            logUploadStream.add(inputLogEvent)
-        } else {
-            if (uploadDisposable == null) {
-                startLogUpload()
-            }
-            logRelay.accept(inputLogEvent)
-        }
+        val inputLogEvent = InputLogEventExt(formatter.format(record), record.millis, maxMessageSize)
+        logDelegate(inputLogEvent)
     }
 
     override fun flush() {
     }
 
     override fun close() {
-        uploadDisposable?.dispose()
         initDisposable?.dispose()
-        logUploadStream.close()
+        logUploadStream?.close()
     }
 }
