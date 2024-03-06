@@ -17,15 +17,10 @@ class KeyFormat(pattern: String, private val locale: Locale = Locale.getDefault(
     private val dateOnlyFormat: SimpleDateFormat
 
     init {
-        val indices = Regex("@").findAll(pattern).map { it.range.first }.toList()
-        if (indices.size % 2 != 0) {
-            throw IllegalArgumentException("Invalid pattern")
-        }
-
-        val formatStrings = indices.chunked(2).map { pattern.substring(it[0] + 1, it[1]) }
+        val split = pattern.split("@")
+        val formatStrings = split.filterIndexed { index, _ -> index % 2 == 1 }
         formats = formatStrings.map { SimpleDateFormat(it, locale) }
-        val elseIndices = listOf(-1) + indices + listOf(pattern.length)
-        normalStrings = elseIndices.chunked(2).map { pattern.substring(it[0] + 1, it[1]) }
+        normalStrings = split.filterIndexed { index, _ -> index % 2 == 0 }
         regex = Regex("^" + normalStrings.joinToString("(.*)") + "$")
         dateOnlyFormat = SimpleDateFormat(formatStrings.joinToString(""), locale)
     }
