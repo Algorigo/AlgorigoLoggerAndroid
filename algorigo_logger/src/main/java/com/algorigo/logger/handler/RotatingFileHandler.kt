@@ -243,17 +243,17 @@ class RotatingFileHandler(
 
     fun setPostfix(logFile: LogFile, postfix: String): LogFile? {
         if (!File(logFile.path).exists()) {
-            return null;
+            return null
         }
         if (logFile.postfix == postfix) {
-            return logFile;
+            return logFile
         }
 
         synchronized(files) {
             val index = files.indexOf(logFile)
             return logFile.withPostfix(postfix).also {
                 files[index] = it
-                File(logFile.path).renameTo(File(it.path));
+                File(logFile.path).renameTo(File(it.path))
             }
         }
     }

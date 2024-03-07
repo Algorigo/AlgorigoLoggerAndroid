@@ -52,7 +52,7 @@ class LogDatabase(
             )
         }
 
-    internal fun selectCreatedAt(id: Long) =
+    internal fun selectForId(id: Long) =
         Single.fromCallable {
             readableDatabase.query(
                 TABLE_NAME,
@@ -165,7 +165,7 @@ class LogDatabase(
 
     companion object {
         private const val DATABASE_NAME = "android_cloudwatch_log.db"
-        private val VERSION = 1;
+        private val VERSION = 1
         private val TABLE_NAME = "log"
         private val COLUMN_ID = "_id"
         private val COLUMN_MESSAGE = "message"

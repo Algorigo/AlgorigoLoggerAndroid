@@ -1,7 +1,6 @@
 package com.algorigo.logger.util
 
 import android.content.Context
-import android.util.Log
 import com.jakewharton.rxrelay3.PublishRelay
 import com.jakewharton.rxrelay3.ReplayRelay
 import io.reactivex.rxjava3.core.Single
@@ -41,7 +40,7 @@ internal class LogUploadStream(
                             is Event.LogAddEvent -> {
                                 logDatabase.insert(event.log)
                                     .flatMap {
-                                        logDatabase.selectCreatedAt(it)
+                                        logDatabase.selectForId(it)
                                     }
                                     .map {
                                         DatabaseResult.LogInserted(1, event.log.size, it)
@@ -95,7 +94,7 @@ internal class LogUploadStream(
                                 if (index >= 0) {
                                     logBatches.removeAt(index)
                                 } else {
-                                    logBatches = mutableListOf(Triple(countAndSize, Pair("", ""), 0))
+                                    logBatches = mutableListOf(Triple(Pair(result.restCount, result.restSize), Pair("", ""), 0))
                                 }
                                 Pair(logBatches, null)
                             }
