@@ -1,0 +1,98 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/configuration-reference
+version: 2.1
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
+
+jobs:
+  build:
+    docker:
+      - image: cimg/android:2024.01
+    steps:
+      - checkout
+      - run:
+          command: |
+            sdkmanager "system-images;android-29;default;x86"
+          name: Install system image "system-images;android-29;default;x86"
+      - run:
+          command: |
+            find . -name 'build.gradle' | sort | xargs cat |
+            shasum | awk '{print $1}' > ./tmp_gradle_cache_seed
+          name: Generate cache checksum
+      - restore_cache:
+          key: gradle-v1a-{{ arch }}-{{ checksum "./tmp_gradle_cache_seed" }}
+          name: Restore gradle cache
+      - run:
+          name: gradle.property
+          command: |
+            mkdir -p ~/.gradle
+            curl $GRADLE_PROPERTY_PATH --output ~/.gradle/gradle.properties
+            curl $SECRET_KEY_RING_PATH --output algorigo_logger/secret-keys.gpg
+      - run:
+          command: |
+            ./gradlew clean build
+          no_output_timeout: 30m
+          name: 'Run: ./gradlew build'
+      - save_cache:
+          key: gradle-v1a-{{ arch }}-{{ checksum "./tmp_gradle_cache_seed" }}
+          name: Save gradle cache
+          paths:
+            - ~/.gradle/caches
+            - ~/.gradle/wrapper
+      - save_cache:
+          key: gradle-properties-${CIRCLE_WORKFLOW_ID}
+          name: Save gradle properties
+          paths:
+            - ~/.gradle/gradle.properties
+      - store_artifacts:
+          path: algorigo_logger/build/reports
+          destination: reports
+      - store_test_results:
+          path: algorigo_logger/build/test-results
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+    resource_class: medium
+  deploy:
+    docker:
+      - image: ccistaging/android:api-30
+    working_directory: ~/code
+    steps:
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: gradle-v1a-{{ arch }}-{{ checksum "./tmp_gradle_cache_seed" }}
+          name: Restore gradle cache
+      - restore_cache:
+          key: gradle-properties-${CIRCLE_WORKFLOW_ID}
+          name: Restore gradle properties
+      - run:
+          name: Upload Maven Central
+          command: ./gradlew publish
+
+# Orchestrate jobs using workflows
+# See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
+workflows:
+  build-deploy-workflow: # This is the name of the workflow, feel free to change it to better match your workflow.
+    # Inside the workflow, you define the jobs you want to run.
+    jobs:
+      - build:
+        filters:
+          branches:
+            only:
+              - v2/master
+              - v2/develop
+              - /v2\/feature\/.*/
+              - /v2\/release\/.*/
+              - /v2\/hotfix\/.*/
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - v2/master
+                - /v2\/release\/.*/
+                - /v2\/hotfix\/.*/
