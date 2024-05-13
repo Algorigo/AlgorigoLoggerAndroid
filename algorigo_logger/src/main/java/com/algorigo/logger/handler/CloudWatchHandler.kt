@@ -6,8 +6,11 @@ import com.algorigo.logger.formatter.TimelessLogFormatter
 import com.algorigo.logger.util.InputLogEventExt
 import com.algorigo.logger.util.LogUploadStream
 import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.AWSCredentials
 import com.amazonaws.auth.BasicAWSCredentials
+import com.amazonaws.auth.CognitoCachingCredentialsProvider
 import com.amazonaws.regions.Region
+import com.amazonaws.regions.Regions
 import com.amazonaws.services.logs.AmazonCloudWatchLogsClient
 import com.amazonaws.services.logs.model.CreateLogGroupRequest
 import com.amazonaws.services.logs.model.CreateLogStreamRequest
@@ -32,9 +35,8 @@ class CloudWatchHandler(
     context: Context,
     logGroupNameSingle: Single<String>,
     logStreamNameSingle: Single<String>,
-    awsAccessKey: String,
-    awsSecretKey: String,
-    awsRegion: Region,
+    credentials: AWSCredentials,
+    regionString: String,
     formatter: Formatter? = null,
     level: Level = Level.INFO,
     useQueue: Boolean = true,
@@ -82,20 +84,20 @@ class CloudWatchHandler(
     class LogStreamNotFoundException : RuntimeException()
 
     private val client: AmazonCloudWatchLogsClient = AmazonCloudWatchLogsClient(
-        BasicAWSCredentials(awsAccessKey, awsSecretKey),
+        credentials,
         ClientConfiguration()
 //            .withMaxConnections(1000)
 //            .withMaxErrorRetry(10)
 //            .withConnectionTimeout(10000)
 //            .withSocketTimeout(10000)
     ).apply {
-        setRegion(awsRegion)
+        setRegion(Region.getRegion(regionString))
     }
 
     private var logUploadStream: LogUploadStream? = null
     private var initDisposable: Disposable? = null
     private val logRelay = ReplayRelay.create<InputLogEventExt>()
-    private lateinit var logDelegate: (InputLogEventExt) -> Unit
+    private var logDelegate: (InputLogEventExt) -> Unit
 
     val debugLogger = Logger.getLogger("algorigo_logger.cloud_watch_handler")
 
@@ -146,7 +148,7 @@ class CloudWatchHandler(
         logStreamName: String,
         awsAccessKey: String,
         awsSecretKey: String,
-        awsRegion: Region,
+        awsRegionString: String,
         formatter: Formatter? = null,
         level: Level = Level.INFO,
         useQueue: Boolean = true,
@@ -161,45 +163,8 @@ class CloudWatchHandler(
         context,
         Single.just(logGroupName),
         Single.just(logStreamName),
-        awsAccessKey,
-        awsSecretKey,
-        awsRegion,
-        formatter,
-        level,
-        useQueue,
-        sendIntervalMillis,
-        maxQueueSize,
-        maxBatchCount,
-        maxMessageSize,
-        logGroupRetentionDays,
-        createLogGroup,
-        createLogStream,
-    )
-
-    constructor(
-        context: Context,
-        logGroupNameSingle: Single<String>,
-        logStreamNameSingle: Single<String>,
-        awsAccessKey: String,
-        awsSecretKey: String,
-        awsRegionString: String,
-        formatter: Formatter? = null,
-        level: Level = Level.INFO,
-        useQueue: Boolean = true,
-        sendIntervalMillis: Long = 1000 * 60, // 1 minutes
-        maxQueueSize: Int = 1048576, // 1 MBytes
-        maxBatchCount: Int = 10000,
-        maxMessageSize: Int = 262114, // 256 KBytes
-        logGroupRetentionDays: RetentionDays = RetentionDays.month6,
-        createLogGroup: Boolean = true,
-        createLogStream: Boolean = true,
-    ) : this(
-        context,
-        logGroupNameSingle,
-        logStreamNameSingle,
-        awsAccessKey,
-        awsSecretKey,
-        Region.getRegion(awsRegionString),
+        BasicAWSCredentials(awsAccessKey, awsSecretKey),
+        awsRegionString,
         formatter,
         level,
         useQueue,
@@ -216,8 +181,7 @@ class CloudWatchHandler(
         context: Context,
         logGroupName: String,
         logStreamName: String,
-        awsAccessKey: String,
-        awsSecretKey: String,
+        identityPoolId: String,
         awsRegionString: String,
         formatter: Formatter? = null,
         level: Level = Level.INFO,
@@ -233,9 +197,8 @@ class CloudWatchHandler(
         context,
         Single.just(logGroupName),
         Single.just(logStreamName),
-        awsAccessKey,
-        awsSecretKey,
-        Region.getRegion(awsRegionString),
+        CognitoCachingCredentialsProvider(context, identityPoolId, Regions.fromName(awsRegionString)).credentials,
+        awsRegionString,
         formatter,
         level,
         useQueue,
