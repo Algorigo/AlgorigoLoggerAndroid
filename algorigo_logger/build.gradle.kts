@@ -5,7 +5,7 @@ plugins {
     id("signing")
 }
 
-val versionStr = "1.0.2"
+val versionStr = "1.1.0"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
