@@ -5,7 +5,7 @@ plugins {
     id("signing")
 }
 
-val versionStr = "1.0.2"
+val versionStr = "1.1.0"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
@@ -142,6 +142,7 @@ dependencies {
     implementation("com.jakewharton.rxrelay3:rxrelay:3.0.1")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.1")
 
+    implementation("com.amazonaws:aws-android-sdk-cognito:2.13.5")
     implementation("com.amazonaws:aws-android-sdk-s3:2.74.0")
     implementation("com.amazonaws:aws-android-sdk-logs:2.74.0")
 }

@@ -1,10 +1,10 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
-import com.algorigo.logger.formatter.TimedLogFormatter
+import com.algorigo.logger.CredentialsProviderHolder
 import com.algorigo.logger.Level
+import com.algorigo.logger.formatter.TimedLogFormatter
 import com.algorigo.logger.util.KeyFormat
-import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.Region
 import com.amazonaws.services.s3.AmazonS3Client
 import com.jakewharton.rxrelay3.PublishRelay
@@ -138,7 +138,7 @@ class RotatingFileHandler(
         backupCount,
         rotateCheckIntervalMillis,
         append,
-    );
+    )
 
     fun getAllLogFiles() = files.map { it.path } + baseFilePath
 
@@ -259,16 +259,14 @@ class RotatingFileHandler(
     }
 
     fun registerS3Uploader(
-        accessKey: String,
-        secretKey: String,
+        credentialsProviderHolder: CredentialsProviderHolder,
         region: Region,
         bucketName: String,
         keyDelegate: (LogFile) -> String
     ) {
         uploadDisposable?.dispose()
         uploadDisposable = Single.fromCallable {
-            val credentials = BasicAWSCredentials(accessKey, secretKey)
-            AmazonS3Client(credentials, region)
+            AmazonS3Client(credentialsProviderHolder.credentialsProvider, region)
         }
             .subscribeOn(Schedulers.io())
             .flatMapCompletable { client ->
@@ -302,42 +300,14 @@ class RotatingFileHandler(
     }
 
     fun registerS3Uploader(
-        accessKey: String,
-        secretKey: String,
+        credentialsProviderHolder: CredentialsProviderHolder,
         region: Region,
         bucketName: String,
         keyFormat: KeyFormat
-    ) = registerS3Uploader(accessKey, secretKey, region, bucketName) {
+    ) = registerS3Uploader(credentialsProviderHolder, region, bucketName) {
         keyFormat.format(it.rotatedDate)
     }
 
-    fun registerS3Uploader(
-        accessKey: String,
-        secretKey: String,
-        regionString: String,
-        bucketName: String,
-        keyDelegate: (LogFile) -> String
-    ) = registerS3Uploader(
-        accessKey,
-        secretKey,
-        Region.getRegion(regionString),
-        bucketName,
-        keyDelegate
-    )
-
-    fun registerS3Uploader(
-        accessKey: String,
-        secretKey: String,
-        region: String,
-        bucketName: String,
-        keyFormat: KeyFormat
-    ) = registerS3Uploader(
-        accessKey,
-        secretKey,
-        Region.getRegion(region),
-        bucketName,
-        keyFormat
-    )
 
     fun unregisterUploader() {
         uploadDisposable?.dispose()
