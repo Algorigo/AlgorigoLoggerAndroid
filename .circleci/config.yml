@@ -82,17 +82,17 @@ workflows:
         filters:
           branches:
             only:
-              - v2/master
-              - v2/develop
-              - /v2\/feature\/.*/
-              - /v2\/release\/.*/
-              - /v2\/hotfix\/.*/
+              - master
+              - develop
+              - /feature\/.*/
+              - /release\/.*/
+              - /hotfix\/.*/
       - deploy:
           requires:
             - build
           filters:
             branches:
               only:
-                - v2/master
-                - /v2\/release\/.*/
-                - /v2\/hotfix\/.*/
+                - master
+                - /release\/.*/
+                - /hotfix\/.*/
