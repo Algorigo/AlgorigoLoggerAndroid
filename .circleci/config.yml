@@ -57,7 +57,7 @@ jobs:
     resource_class: medium
   deploy:
     docker:
-      - image: ccistaging/android:api-30
+      - image: cimg/android:2024.01
     working_directory: ~/code
     steps:
       - attach_workspace:
