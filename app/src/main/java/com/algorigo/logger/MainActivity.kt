@@ -72,7 +72,12 @@ class MainActivity : ComponentActivity() {
             rotateAtSizeBytes = 100,
         ).also {
             algorigoLogHandler.addHandler(it)
-            it.registerS3Uploader(identityPoolId, region, "woon") {
+            it.registerS3Uploader(
+//                CredentialsProviderHolder.AccessKeyProvider(accessKey, secretKey),
+                CredentialsProviderHolder.IdentityPoolProvider(this, identityPoolId, region.name),
+                region,
+                "woon"
+            ) {
                 "log_file/${pathFormat.format(it.rotatedDate)}" +
                         "/algorigo_logger_android-log-${filenameFormat.format(it.rotatedDate)}.log"
             }
@@ -81,7 +86,8 @@ class MainActivity : ComponentActivity() {
             this,
             "/test/algorigo_logger_android",
             "device_id",
-            identityPoolId,
+//            CredentialsProviderHolder.AccessKeyProvider(accessKey, secretKey),
+            CredentialsProviderHolder.IdentityPoolProvider(this, identityPoolId, region.name),
             region,
             level = Level.VERBOSE,
             logGroupRetentionDays = CloudWatchHandler.RetentionDays.day1,
@@ -160,7 +166,7 @@ class MainActivity : ComponentActivity() {
         private const val accessKey = ""
         private const val secretKey = ""
         private const val identityPoolId = ""
-        private val region = Regions.AP_NORTHEAST_2.getName()
+        private val region = Region.getRegion(Regions.AP_NORTHEAST_2)
     }
 }
 

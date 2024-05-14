@@ -1,13 +1,11 @@
 package com.algorigo.logger.handler
 
 import android.content.Context
+import com.algorigo.logger.CredentialsProviderHolder
 import com.algorigo.logger.Level
 import com.algorigo.logger.formatter.TimedLogFormatter
-import com.amazonaws.auth.AWSCredentials
-import com.amazonaws.auth.BasicAWSCredentials
-import com.amazonaws.auth.CognitoCachingCredentialsProvider
+import com.algorigo.logger.util.KeyFormat
 import com.amazonaws.regions.Region
-import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3Client
 import com.jakewharton.rxrelay3.PublishRelay
 import io.reactivex.rxjava3.core.Observable
@@ -34,8 +32,7 @@ import java.util.logging.StreamHandler
 
 
 class RotatingFileHandler(
-    private val context: Context,
-    relativePath: String,
+    private val baseFilePath: String,
     formatter: Formatter? = null,
     level: Level = Level.DEBUG,
     private var rotateAtSizeBytes: Int = 10 * 1024 * 1024, // 10 MBytes
@@ -112,18 +109,36 @@ class RotatingFileHandler(
     val rotatedFileObservable: Observable<LogFile>
         get() = _rotatedFileRelay.startWith(Observable.fromIterable(files))
     private var uploadDisposable: Disposable? = null
-    private var baseFilePath: String = File(context.filesDir, relativePath).let {
-        if (it.parentFile?.let { !it.exists() || !it.isDirectory } == true) {
-            it.parentFile!!.mkdirs()
-        }
-        it.absolutePath
-    }
 
     init {
         setFormatter(formatter ?: TimedLogFormatter())
         setLevel(level.level)
         openFiles()
     }
+
+    constructor(
+        context: Context,
+        relativePath: String,
+        formatter: Formatter? = null,
+        level: Level = Level.INFO,
+        rotateAtSizeBytes: Int = 10 * 1024 * 1024, // 10 MBytes
+        backupCount: Int = 5,
+        rotateCheckIntervalMillis: Long = 1000 * 60 * 5, // 5 munites
+        append: Boolean = true,
+    ) : this(
+        File(context.filesDir, relativePath).let {
+            if (it.parentFile?.let { !it.exists() || !it.isDirectory } == true) {
+                it.parentFile!!.mkdirs()
+            }
+            it.absolutePath
+        },
+        formatter,
+        level,
+        rotateAtSizeBytes,
+        backupCount,
+        rotateCheckIntervalMillis,
+        append,
+    )
 
     fun getAllLogFiles() = files.map { it.path } + baseFilePath
 
@@ -244,14 +259,14 @@ class RotatingFileHandler(
     }
 
     fun registerS3Uploader(
-        credentials: AWSCredentials,
+        credentialsProviderHolder: CredentialsProviderHolder,
         region: Region,
         bucketName: String,
         keyDelegate: (LogFile) -> String
     ) {
         uploadDisposable?.dispose()
         uploadDisposable = Single.fromCallable {
-            AmazonS3Client(credentials, region)
+            AmazonS3Client(credentialsProviderHolder.credentialsProvider, region)
         }
             .subscribeOn(Schedulers.io())
             .flatMapCompletable { client ->
@@ -285,29 +300,14 @@ class RotatingFileHandler(
     }
 
     fun registerS3Uploader(
-        accessKey: String,
-        secretKey: String,
-        regionString: String,
+        credentialsProviderHolder: CredentialsProviderHolder,
+        region: Region,
         bucketName: String,
-        keyDelegate: (LogFile) -> String
-    ) = registerS3Uploader(
-        BasicAWSCredentials(accessKey, secretKey),
-        Region.getRegion(regionString),
-        bucketName,
-        keyDelegate
-    )
+        keyFormat: KeyFormat
+    ) = registerS3Uploader(credentialsProviderHolder, region, bucketName) {
+        keyFormat.format(it.rotatedDate)
+    }
 
-    fun registerS3Uploader(
-        identityPoolId: String,
-        regionString: String,
-        bucketName: String,
-        keyDelegate: (LogFile) -> String
-    ) = registerS3Uploader(
-        CognitoCachingCredentialsProvider(context, identityPoolId, Regions.fromName(regionString)).credentials,
-        Region.getRegion(regionString),
-        bucketName,
-        keyDelegate
-    )
 
     fun unregisterUploader() {
         uploadDisposable?.dispose()
