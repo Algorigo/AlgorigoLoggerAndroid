@@ -73,16 +73,19 @@ object DataDogLogManager {
     }
 
     fun addDDTag(tagName: String, tag: String) {
-        tagMap[tagName] = tag
+        val lowerName = tagName.lowercase()
+        val lowerTag = tag.lowercase()
+        tagMap[lowerName] = lowerTag
         datadogLogger.values.forEach {
-            it.addTag(tagName, tag)
+            it.addTag(lowerName, lowerTag)
         }
     }
 
     fun removeDDTag(tagName: String) {
-        tagMap.remove(tagName)
+        val lowerName = tagName.lowercase()
+        tagMap.remove(lowerName)
         datadogLogger.values.forEach {
-            it.removeTag(tagName)
+            it.removeTag(lowerName)
         }
     }
 
