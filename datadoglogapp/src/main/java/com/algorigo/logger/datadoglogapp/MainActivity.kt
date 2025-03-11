@@ -29,7 +29,8 @@ class MainActivity : AppCompatActivity() {
                 "dev",
                 "android",
                 "log_test_android",
-                level = Level.VERBOSE,
+                verboseLevel = Level.VERBOSE,
+                remoteLevel = Level.DEBUG,
             ).apply {
                 addDDTag("tagName", "tagValue")
                 addAttribute("attributeName", "attributeValue")

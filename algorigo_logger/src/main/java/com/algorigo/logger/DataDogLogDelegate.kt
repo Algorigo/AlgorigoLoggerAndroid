@@ -14,15 +14,17 @@ class DataDogLogDelegate(
     env: String,
     variant: String,
     service: String,
-    level: Level = Level.DEBUG,
-    networkInfoEnabled: Boolean = true,
+    verboseLevel: Level = Level.DEBUG,
+    remoteLevel: Level = Level.INFO,
+    networkInfoEnabled: Boolean = false,
     logcatLogEnabled: Boolean = true,
     remoteSampleRate: Float = 100f,
     bundleWithTraceEnabled: Boolean = true,
     bundleWithRumEnabled: Boolean = true,
 ) : LogDelegate {
     private val datadogLogger = mutableMapOf<String, Logger>()
-    private var networkInfoEnabled = true
+    private var remoteLevel = Level.INFO
+    private var networkInfoEnabled = false
     private var logcatLogEnabled = true
     private var remoteSampleRate = 100f
     private var bundleWithTraceEnabled = true
@@ -40,8 +42,9 @@ class DataDogLogDelegate(
             ).build()
             Datadog.initialize(context, configuration, TrackingConsent.GRANTED)
             Logs.enable(LogsConfiguration.Builder().build())
-            Datadog.setVerbosity(level.intValue)
+            Datadog.setVerbosity(verboseLevel.intValue)
 
+            this.remoteLevel = remoteLevel
             this.networkInfoEnabled = networkInfoEnabled
             this.logcatLogEnabled = logcatLogEnabled
             this.remoteSampleRate = remoteSampleRate
@@ -53,6 +56,7 @@ class DataDogLogDelegate(
     override fun initTag(tag: Tag) {
         if (Datadog.isInitialized() && !datadogLogger.containsKey(tag.name)) {
             val logger = Logger.Builder().setNetworkInfoEnabled(networkInfoEnabled)
+                .setRemoteLogThreshold(remoteLevel.intValue)
                 .setLogcatLogsEnabled(logcatLogEnabled)
                 .setRemoteSampleRate(remoteSampleRate)
                 .setBundleWithTraceEnabled(bundleWithTraceEnabled)
