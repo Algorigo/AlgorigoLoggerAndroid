@@ -2,11 +2,8 @@ package com.algorigo.logger.datadoglogapp
 
 import android.os.Bundle
 import android.util.Log
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import com.algorigo.logger.DataDogLogManager
+import com.algorigo.logger.DataDogLogDelegate
 import com.algorigo.logger.L
 import com.algorigo.logger.Level
 import com.algorigo.logger.LogManager
@@ -25,16 +22,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        DataDogLogManager.initDataDog(
-            this,
-            "",
-            "dev",
-            "android",
-            "log_test_android",
+        LogManager.addDelegate(
+            DataDogLogDelegate(
+                this,
+                "",
+                "dev",
+                "android",
+                "log_test_android",
+                level = Level.VERBOSE,
+            ).apply {
+                addDDTag("tagName", "tagValue")
+                addAttribute("attributeName", "attributeValue")
+            }
         )
-        DataDogLogManager.setLevel(Level.VERBOSE)
-        DataDogLogManager.addDDTag("tagName", "tagValue")
-        DataDogLogManager.addAttribute("attributeName", "attributeValue")
         LogManager.initTags(LogTag)
 
         LogManager.removeRootAndroidHandler()

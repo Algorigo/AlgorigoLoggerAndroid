@@ -8,7 +8,19 @@ import com.datadog.android.log.Logs
 import com.datadog.android.log.LogsConfiguration
 import com.datadog.android.privacy.TrackingConsent
 
-object DataDogLogManager {
+class DataDogLogDelegate(
+    context: Context,
+    clientToken: String,
+    env: String,
+    variant: String,
+    service: String,
+    level: Level = Level.DEBUG,
+    networkInfoEnabled: Boolean = true,
+    logcatLogEnabled: Boolean = true,
+    remoteSampleRate: Float = 100f,
+    bundleWithTraceEnabled: Boolean = true,
+    bundleWithRumEnabled: Boolean = true,
+) : LogDelegate {
     private val datadogLogger = mutableMapOf<String, Logger>()
     private var networkInfoEnabled = true
     private var logcatLogEnabled = true
@@ -18,38 +30,27 @@ object DataDogLogManager {
     private val tagMap = mutableMapOf<String, String>()
     private val attributeMap = mutableMapOf<String, String>()
 
-    fun initDataDog(
-        context: Context,
-        clientToken: String,
-        env: String,
-        variant: String,
-        service: String,
-        networkInfoEnabled: Boolean = true,
-        logcatLogEnabled: Boolean = true,
-        remoteSampleRate: Float = 100f,
-        bundleWithTraceEnabled: Boolean = true,
-        bundleWithRumEnabled: Boolean = true,
-    ) {
-        if (Datadog.isInitialized()) {
-            return
-        }
+    init {
+        if (!Datadog.isInitialized()) {
+            val configuration = Configuration.Builder(
+                clientToken = clientToken,
+                env = env,
+                variant = variant,
+                service = service,
+            ).build()
+            Datadog.initialize(context, configuration, TrackingConsent.GRANTED)
+            Logs.enable(LogsConfiguration.Builder().build())
+            Datadog.setVerbosity(level.intValue)
 
-        val configuration = Configuration.Builder(
-            clientToken = clientToken,
-            env = env,
-            variant = variant,
-            service = service,
-        ).build()
-        Datadog.initialize(context, configuration, TrackingConsent.GRANTED)
-        Logs.enable(LogsConfiguration.Builder().build())
-        this.networkInfoEnabled = networkInfoEnabled
-        this.logcatLogEnabled = logcatLogEnabled
-        this.remoteSampleRate = remoteSampleRate
-        this.bundleWithTraceEnabled = bundleWithTraceEnabled
-        this.bundleWithRumEnabled = bundleWithRumEnabled
+            this.networkInfoEnabled = networkInfoEnabled
+            this.logcatLogEnabled = logcatLogEnabled
+            this.remoteSampleRate = remoteSampleRate
+            this.bundleWithTraceEnabled = bundleWithTraceEnabled
+            this.bundleWithRumEnabled = bundleWithRumEnabled
+        }
     }
 
-    fun initTag(tag: Tag) {
+    override fun initTag(tag: Tag) {
         if (Datadog.isInitialized() && !datadogLogger.containsKey(tag.name)) {
             val logger = Logger.Builder().setNetworkInfoEnabled(networkInfoEnabled)
                 .setLogcatLogsEnabled(logcatLogEnabled)

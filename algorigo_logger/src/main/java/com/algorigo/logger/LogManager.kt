@@ -68,16 +68,31 @@ fun java.util.logging.Level.loggingLevelToIntValue(): Int {
     }
 }
 
+interface LogDelegate {
+    fun initTag(tag: Tag)
+}
+
 object LogManager {
 
+    private val delegates = mutableListOf<LogDelegate>()
     private val loggerMap = mutableMapOf<Tag, java.util.logging.Logger>()
+
+    fun addDelegate(delegate: LogDelegate) {
+        delegates.add(delegate)
+    }
+
+    fun <T> getDelegate(clazz: Class<T>): T? {
+        return delegates.firstOrNull { clazz.isInstance(it) } as T?
+    }
 
     fun initTags(vararg tags: Tag) {
         tags.forEach {
             if (!loggerMap.containsKey(it)) {
                 loggerMap[it] = java.util.logging.Logger.getLogger(it.name)
                 initTags(*it.getChildren().toTypedArray())
-                DataDogLogManager.initTag(it)
+                for (delegate in delegates) {
+                    delegate.initTag(it)
+                }
             }
         }
     }
