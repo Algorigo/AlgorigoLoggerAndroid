@@ -9,6 +9,7 @@ import com.algorigo.logger.loggingLevelToIntValue
 import com.datadog.android.Datadog
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.Date
 import java.util.logging.Formatter
 import java.util.logging.Handler
 import java.util.logging.LogRecord
@@ -34,7 +35,12 @@ class DataDogHandler(level: Level = Level.DEBUG) : Handler() {
                 return
             }
             dataDogLogDelegate.getLogger(logRecord.loggerName)
-                ?.log(logRecord.level?.loggingLevelToIntValue() ?: Log.DEBUG, logRecord.message)
+                ?.log(
+                    logRecord.level?.loggingLevelToIntValue() ?: Log.DEBUG,
+                    logRecord.message,
+                    throwable = logRecord.thrown,
+                    attributes = mapOf("date" to Date(logRecord.millis)),
+                )
         }
     }
 
