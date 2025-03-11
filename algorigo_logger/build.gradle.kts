@@ -145,4 +145,6 @@ dependencies {
     implementation("com.amazonaws:aws-android-sdk-cognito:2.13.5")
     implementation("com.amazonaws:aws-android-sdk-s3:2.74.0")
     implementation("com.amazonaws:aws-android-sdk-logs:2.74.0")
+
+    implementation("com.datadoghq:dd-sdk-android-logs:2.18.0")
 }

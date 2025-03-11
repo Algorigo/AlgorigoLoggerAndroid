@@ -46,14 +46,26 @@ open class Tag {
     }
 }
 
-enum class Level(val level: java.util.logging.Level) {
-    VERBOSE(java.util.logging.Level.FINEST),
-    DEBUG(java.util.logging.Level.FINE),
-    INFO(java.util.logging.Level.CONFIG),
-    NOTICE(java.util.logging.Level.INFO),
-    WARNING(java.util.logging.Level.WARNING),
-    ERROR(java.util.logging.Level.SEVERE),
-    ASSERTS(java.util.logging.Level.OFF),
+enum class Level(val level: java.util.logging.Level, val intValue: Int) {
+    VERBOSE(java.util.logging.Level.FINEST, Log.VERBOSE),
+    DEBUG(java.util.logging.Level.FINE, Log.DEBUG),
+    INFO(java.util.logging.Level.CONFIG, Log.INFO),
+    NOTICE(java.util.logging.Level.INFO, Log.INFO),
+    WARNING(java.util.logging.Level.WARNING, Log.WARN),
+    ERROR(java.util.logging.Level.SEVERE, Log.ERROR),
+    ASSERTS(java.util.logging.Level.OFF, Log.ASSERT),
+}
+
+fun java.util.logging.Level.loggingLevelToIntValue(): Int {
+    return when (this) {
+        java.util.logging.Level.FINEST -> Log.VERBOSE
+        java.util.logging.Level.FINE -> Log.DEBUG
+        java.util.logging.Level.CONFIG -> Log.INFO
+        java.util.logging.Level.INFO -> Log.INFO
+        java.util.logging.Level.WARNING -> Log.WARN
+        java.util.logging.Level.SEVERE -> Log.ERROR
+        else -> Log.ASSERT
+    }
 }
 
 object LogManager {
@@ -65,6 +77,7 @@ object LogManager {
             if (!loggerMap.containsKey(it)) {
                 loggerMap[it] = java.util.logging.Logger.getLogger(it.name)
                 initTags(*it.getChildren().toTypedArray())
+                DataDogLogManager.initTag(it)
             }
         }
     }

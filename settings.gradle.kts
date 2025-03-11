@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "AlgorigoLogger"
 include(":app")
 include(":algorigo_logger")
+include(":datadoglogapp")
