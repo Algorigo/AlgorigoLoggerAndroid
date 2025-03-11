@@ -81,7 +81,7 @@ object LogManager {
         delegates.add(delegate)
     }
 
-    fun <T> getDelegate(clazz: Class<T>): T? {
+    fun <T : LogDelegate> getDelegate(clazz: Class<T>): T? {
         return delegates.firstOrNull { clazz.isInstance(it) } as T?
     }
 
