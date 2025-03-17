@@ -31,7 +31,7 @@ jobs:
             curl $SECRET_KEY_RING_PATH --output algorigo_logger/secret-keys.gpg
       - run:
           command: |
-            ./gradlew clean build
+            ./gradlew clean assembleRelease --no-daemon
           no_output_timeout: 30m
           name: 'Run: ./gradlew build'
       - save_cache:
@@ -70,7 +70,7 @@ jobs:
           name: Restore gradle properties
       - run:
           name: Upload Maven Central
-          command: ./gradlew publish
+          command: ./gradlew publish --no-daemon
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
