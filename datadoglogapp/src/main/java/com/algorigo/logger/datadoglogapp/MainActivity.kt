@@ -27,7 +27,6 @@ class MainActivity : AppCompatActivity() {
                 this,
                 "",
                 "dev",
-                "android",
                 "log_test_android",
                 verboseLevel = Level.VERBOSE,
                 remoteLevel = Level.DEBUG,
