@@ -35,7 +35,7 @@ open class Tag {
         } ?: javaClass.simpleName
     }
 
-    fun getChildren() : List<Tag> {
+    open fun getChildren() : List<Tag> {
         return javaClass.declaredClasses.mapNotNull {
             if (Tag::class.java.isAssignableFrom(it)) {
                 (it.kotlin.objectInstance ?: it.getDeclaredConstructor().newInstance()) as Tag
