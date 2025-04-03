@@ -5,7 +5,7 @@ import androidx.annotation.IntRange
 
 open class Tag {
 
-    val name: String
+    private val tagName: String
     private val parent: Tag?
         get() = javaClass.name
             .run {
@@ -29,9 +29,12 @@ open class Tag {
                 }
             }
 
+    open val name: String
+        get() = tagName
+
     init {
-        name = parent?.let {
-            it.name + "." + javaClass.simpleName
+        tagName = parent?.let {
+            it.tagName + "." + javaClass.simpleName
         } ?: javaClass.simpleName
     }
 
@@ -69,16 +72,19 @@ fun java.util.logging.Level.loggingLevelToIntValue(): Int {
 }
 
 interface LogDelegate {
-    fun initTag(tag: Tag)
+    fun initTag(tagName: String)
 }
 
 object LogManager {
 
     private val delegates = mutableListOf<LogDelegate>()
-    private val loggerMap = mutableMapOf<Tag, java.util.logging.Logger>()
+    private val loggerMap = mutableMapOf<String, java.util.logging.Logger>()
 
     fun addDelegate(delegate: LogDelegate) {
         delegates.add(delegate)
+        for (tagName in loggerMap.keys) {
+            delegate.initTag(tagName)
+        }
     }
 
     fun <T : LogDelegate> getDelegate(clazz: Class<T>): T? {
@@ -87,11 +93,11 @@ object LogManager {
 
     fun initTags(vararg tags: Tag) {
         tags.forEach {
-            if (!loggerMap.containsKey(it)) {
-                loggerMap[it] = java.util.logging.Logger.getLogger(it.name)
+            if (!loggerMap.containsKey(it.name)) {
+                loggerMap[it.name] = java.util.logging.Logger.getLogger(it.name)
                 initTags(*it.getChildren().toTypedArray())
                 for (delegate in delegates) {
-                    delegate.initTag(it)
+                    delegate.initTag(it.name)
                 }
             }
         }
@@ -99,8 +105,8 @@ object LogManager {
 
     @Synchronized
     fun getLogger(tag: Tag): java.util.logging.Logger {
-        return loggerMap[tag] ?: (java.util.logging.Logger.getLogger(tag.name).also {
-            loggerMap[tag] = it
+        return loggerMap[tag.name] ?: (java.util.logging.Logger.getLogger(tag.name).also {
+            loggerMap[tag.name] = it
         })
     }
 
