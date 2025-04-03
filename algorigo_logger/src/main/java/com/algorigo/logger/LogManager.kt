@@ -5,7 +5,7 @@ import androidx.annotation.IntRange
 
 open class Tag {
 
-    val name: String
+    private val tagName: String
     private val parent: Tag?
         get() = javaClass.name
             .run {
@@ -29,9 +29,12 @@ open class Tag {
                 }
             }
 
+    open val name: String
+        get() = tagName
+
     init {
-        name = parent?.let {
-            it.name + "." + javaClass.simpleName
+        tagName = parent?.let {
+            it.tagName + "." + javaClass.simpleName
         } ?: javaClass.simpleName
     }
 
