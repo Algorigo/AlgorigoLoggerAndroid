@@ -23,7 +23,7 @@ open class Tag {
                 }
             }?.let {
                 if (Tag::class.java.isAssignableFrom(it)) {
-                    (it.kotlin.objectInstance ?: it.newInstance()) as Tag
+                    (it.kotlin.objectInstance ?: it.getDeclaredConstructor().newInstance()) as Tag
                 } else {
                     null
                 }
@@ -35,10 +35,10 @@ open class Tag {
         } ?: javaClass.simpleName
     }
 
-    fun getChildren() : List<Tag> {
+    open fun getChildren() : List<Tag> {
         return javaClass.declaredClasses.mapNotNull {
             if (Tag::class.java.isAssignableFrom(it)) {
-                (it.kotlin.objectInstance ?: it.newInstance()) as Tag
+                (it.kotlin.objectInstance ?: it.getDeclaredConstructor().newInstance()) as Tag
             } else {
                 null
             }
