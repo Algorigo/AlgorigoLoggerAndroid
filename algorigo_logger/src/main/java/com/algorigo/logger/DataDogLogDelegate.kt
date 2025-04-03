@@ -53,15 +53,15 @@ class DataDogLogDelegate(
         }
     }
 
-    override fun initTag(tag: Tag) {
-        if (Datadog.isInitialized() && !datadogLogger.containsKey(tag.name)) {
+    override fun initTag(tagName: String) {
+        if (Datadog.isInitialized() && !datadogLogger.containsKey(tagName)) {
             val logger = Logger.Builder().setNetworkInfoEnabled(networkInfoEnabled)
                 .setRemoteLogThreshold(remoteLevel.intValue)
                 .setLogcatLogsEnabled(logcatLogEnabled)
                 .setRemoteSampleRate(remoteSampleRate)
                 .setBundleWithTraceEnabled(bundleWithTraceEnabled)
                 .setBundleWithRumEnabled(bundleWithRumEnabled)
-                .setName(tag.name)
+                .setName(tagName)
                 .build()
             tagMap.forEach {
                 logger.addTag(it.key, it.value)
@@ -69,7 +69,7 @@ class DataDogLogDelegate(
             attributeMap.forEach {
                 logger.addAttribute(it.key, it.value)
             }
-            datadogLogger[tag.name] = logger
+            datadogLogger[tagName] = logger
         }
     }
 
