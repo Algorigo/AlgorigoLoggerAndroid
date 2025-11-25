@@ -5,7 +5,7 @@ plugins {
     id("signing")
 }
 
-val versionStr = "1.2.3"
+val versionStr = "1.2.4"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
@@ -98,7 +98,7 @@ signing {
 
 android {
     namespace = group
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 24
@@ -142,9 +142,9 @@ dependencies {
     implementation("com.jakewharton.rxrelay3:rxrelay:3.0.1")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.1")
 
-    implementation("com.amazonaws:aws-android-sdk-cognito:2.13.5")
-    implementation("com.amazonaws:aws-android-sdk-s3:2.74.0")
-    implementation("com.amazonaws:aws-android-sdk-logs:2.74.0")
+    implementation("com.amazonaws:aws-android-sdk-cognito:2.20.1")
+    implementation("com.amazonaws:aws-android-sdk-s3:2.81.1")
+    implementation("com.amazonaws:aws-android-sdk-logs:2.81.1")
 
-    implementation("com.datadoghq:dd-sdk-android-logs:2.18.0")
+    implementation("com.datadoghq:dd-sdk-android-logs:3.3.0")
 }
