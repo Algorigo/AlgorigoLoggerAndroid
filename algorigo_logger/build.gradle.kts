@@ -1,8 +1,12 @@
+import org.jreleaser.model.Active
+import org.jreleaser.model.Signing
+
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("maven-publish")
     id("signing")
+    id("org.jreleaser") version "1.21.0"
 }
 
 val versionStr = "1.2.4"
@@ -48,11 +52,13 @@ publishing {
         create<MavenPublication>("mavenJava") {
             groupId = group
             artifactId = archivesBaseName
+            version = versionName
+
             pom {
                 name.set("Algorigo Logger")
                 description.set("Logger library for Android")
                 url.set("https://github.com/Algorigo/AlgorigoLoggerAndroid")
-                artifact("$buildDir/outputs/aar/${project.name}-release.aar")
+                artifact("${layout.buildDirectory.get()}/outputs/aar/${project.name}-release.aar")
 
                 licenses {
                     license {
@@ -78,15 +84,18 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url = uri(if (versionName.endsWith("SNAPSHOT")) {
-                findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String
-            } else {
-                findProperty("NEXUS_REPOSITORY_URL") as String
-            })
-            credentials {
-                username = findProperty("nexusUsername") as String
-                password = findProperty("nexusPassword") as String
+        if (versionName.endsWith("SNAPSHOT")) {
+            maven {
+                url = uri(findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String)
+                credentials {
+                    username = findProperty("nexusUsername") as String
+                    password = findProperty("nexusPassword") as String
+                }
+            }
+        } else {
+            maven {
+                name = "stagingDeploy"
+                url = uri(layout.buildDirectory.dir("staging-deploy").get().toString())
             }
         }
     }
@@ -95,6 +104,53 @@ publishing {
 signing {
     sign(publishing.publications["mavenJava"])
 }
+
+//jreleaser {
+//    gitRootSearch = true
+//
+//    project {
+//        author("@rouddy")
+//        inceptionYear = "2021"
+//    }
+//
+//    release {
+//        github {
+//            skipTag = true
+//            sign = true
+//            branch = "main"
+//            branchPush = "main"
+//            overwrite = true
+//        }
+//    }
+//
+//    deploy {
+//        maven {
+//            mavenCentral.create("sonatype") {
+//                active = Active.RELEASE
+//                url = "https://central.sonatype.com/api/v1/publisher"
+//                stagingRepository(layout.buildDirectory.dir("staging-deploy").get().toString())
+//                setAuthorization("Basic")
+//                applyMavenCentralRules = false
+//                sign = true
+//                checksums = true
+//                sourceJar = true
+//                javadocJar = true
+//                retryDelay = 60
+//            }
+//        }
+//    }
+//
+//    signing {
+//        active = Active.ALWAYS
+//        armored = true
+//        verify = true
+//        mode = Signing.Mode.MEMORY
+//
+//        passphrase = findProperty("signing.keyId") as String
+//        publicKey = findProperty("signing.password") as String
+//        secretKey = findProperty("signing.secretKeyRingFile") as String
+//    }
+//}
 
 android {
     namespace = group

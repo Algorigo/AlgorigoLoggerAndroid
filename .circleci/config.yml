@@ -31,7 +31,7 @@ jobs:
             curl $SECRET_KEY_RING_PATH --output algorigo_logger/secret-keys.gpg
       - run:
           command: |
-            ./gradlew clean assembleRelease --no-daemon
+            ./gradlew build
           no_output_timeout: 30m
           name: 'Run: ./gradlew build'
       - save_cache:
@@ -69,8 +69,33 @@ jobs:
           key: gradle-properties-${CIRCLE_WORKFLOW_ID}
           name: Restore gradle properties
       - run:
+          name: Write central manual testing auth header value
+          command: echo "centralManualTestingAuthHeaderValue=Bearer ${CIRCLE_CI_BEARER}" >> ./gradle.properties
+      - run:
           name: Upload Maven Central
           command: ./gradlew publish --no-daemon
+  deploy_to_maven_central:
+    docker:
+      - image: cimg/android:2024.01
+    working_directory: ~/code
+    steps:
+      - attach_workspace:
+          at: .
+      - restore_cache:
+          key: gradle-v1a-{{ arch }}-{{ checksum "./tmp_gradle_cache_seed" }}
+          name: Restore gradle cache
+      - restore_cache:
+          key: gradle-properties-${CIRCLE_WORKFLOW_ID}
+          name: Restore gradle properties
+      - run:
+          name: Build Maven Central
+          command: ./gradlew publish
+      - run:
+          name: Upload to Maven Central
+          command: |
+            cd algorigo_logger/build/staging-deploy
+            zip -r staging-deploy.zip com
+            curl --request POST --verbose --header 'Authorization: Bearer $MAVEN_CENTRAL_TOKEN' --form bundle=@staging-deploy.zip https://central.sonatype.com/api/v1/publisher/upload
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
@@ -93,6 +118,12 @@ workflows:
           filters:
             branches:
               only:
-                - master
                 - /release\/.*/
                 - /hotfix\/.*/
+      - deploy_to_maven_central:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - master
