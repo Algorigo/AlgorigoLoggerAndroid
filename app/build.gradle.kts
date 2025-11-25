@@ -1,16 +1,17 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
     namespace = "com.algorigo.logger"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.algorigo.logger"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
@@ -77,5 +78,5 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-rx3:1.3.9")
 
-    implementation("com.amazonaws:aws-android-sdk-s3:2.74.0")
+    implementation("com.amazonaws:aws-android-sdk-s3:2.81.1")
 }
