@@ -222,13 +222,13 @@ internal class FastPrintWriter : PrintWriter {
         if (mPos > 0) {
             if (mOutputStream != null) {
                 val charBuffer = CharBuffer.wrap(mText, 0, mPos)
-                var result = mCharset!!.encode(charBuffer, mBytes, true)
+                var result = mCharset.encode(charBuffer, mBytes, true)
                 while (!mIoError) {
                     if (result.isError) {
                         throw IOException(result.toString())
                     } else if (result.isOverflow) {
                         flushBytesLocked()
-                        result = mCharset!!.encode(charBuffer, mBytes, true)
+                        result = mCharset.encode(charBuffer, mBytes, true)
                         continue
                     }
                     break
