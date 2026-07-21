@@ -1,11 +1,14 @@
+import org.jreleaser.model.Active
+import org.jreleaser.model.Signing
+
 plugins {
     id("com.android.library")
-    id("org.jetbrains.kotlin.android")
     id("maven-publish")
     id("signing")
+    id("org.jreleaser") version "1.25.0"
 }
 
-val versionStr = "1.2.4"
+val versionStr = "1.2.5"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
@@ -48,11 +51,13 @@ publishing {
         create<MavenPublication>("mavenJava") {
             groupId = group
             artifactId = archivesBaseName
+            version = versionName
+
             pom {
                 name.set("Algorigo Logger")
                 description.set("Logger library for Android")
                 url.set("https://github.com/Algorigo/AlgorigoLoggerAndroid")
-                artifact("$buildDir/outputs/aar/${project.name}-release.aar")
+                artifact("${layout.buildDirectory.get()}/outputs/aar/${project.name}-release.aar")
 
                 licenses {
                     license {
@@ -78,15 +83,18 @@ publishing {
         }
     }
     repositories {
-        maven {
-            url = uri(if (versionName.endsWith("SNAPSHOT")) {
-                findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String
-            } else {
-                findProperty("NEXUS_REPOSITORY_URL") as String
-            })
-            credentials {
-                username = findProperty("nexusUsername") as String
-                password = findProperty("nexusPassword") as String
+        if (versionName.endsWith("SNAPSHOT")) {
+            maven {
+                url = uri(findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String)
+                credentials {
+                    username = findProperty("nexusUsername") as String
+                    password = findProperty("nexusPassword") as String
+                }
+            }
+        } else {
+            maven {
+                name = "stagingDeploy"
+                url = uri(layout.buildDirectory.dir("staging-deploy").get().toString())
             }
         }
     }
@@ -96,9 +104,56 @@ signing {
     sign(publishing.publications["mavenJava"])
 }
 
+//jreleaser {
+//    gitRootSearch = true
+//
+//    project {
+//        author("@rouddy")
+//        inceptionYear = "2021"
+//    }
+//
+//    release {
+//        github {
+//            skipTag = true
+//            sign = true
+//            branch = "main"
+//            branchPush = "main"
+//            overwrite = true
+//        }
+//    }
+//
+//    deploy {
+//        maven {
+//            mavenCentral.create("sonatype") {
+//                active = Active.RELEASE
+//                url = "https://central.sonatype.com/api/v1/publisher"
+//                stagingRepository(layout.buildDirectory.dir("staging-deploy").get().toString())
+//                setAuthorization("Basic")
+//                applyMavenCentralRules = false
+//                sign = true
+//                checksums = true
+//                sourceJar = true
+//                javadocJar = true
+//                retryDelay = 60
+//            }
+//        }
+//    }
+//
+//    signing {
+//        active = Active.ALWAYS
+//        armored = true
+//        verify = true
+//        mode = Signing.Mode.MEMORY
+//
+//        passphrase = findProperty("signing.keyId") as String
+//        publicKey = findProperty("signing.password") as String
+//        secretKey = findProperty("signing.secretKeyRingFile") as String
+//    }
+//}
+
 android {
     namespace = group
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 24
@@ -118,11 +173,14 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "11"
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
@@ -130,14 +188,14 @@ dependencies {
 
     implementation("androidx.core:core-ktx:1.9.0")
     implementation(kotlin("reflect"))
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.14.0")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
 
     // ReactiveX
-    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation("io.reactivex.rxjava3:rxjava:3.1.12")
     implementation("io.reactivex.rxjava3:rxandroid:3.0.2")
     implementation("com.jakewharton.rxrelay3:rxrelay:3.0.1")
     implementation("io.reactivex.rxjava3:rxkotlin:3.0.1")
@@ -146,5 +204,5 @@ dependencies {
     implementation("com.amazonaws:aws-android-sdk-s3:2.81.1")
     implementation("com.amazonaws:aws-android-sdk-logs:2.81.1")
 
-    implementation("com.datadoghq:dd-sdk-android-logs:3.3.0")
+    implementation("com.datadoghq:dd-sdk-android-logs:3.12.1")
 }
