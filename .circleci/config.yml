@@ -31,9 +31,9 @@ jobs:
             curl $SECRET_KEY_RING_PATH --output algorigo_logger/secret-keys.gpg
       - run:
           command: |
-            ./gradlew build --no-daemon --max-workers=2
+            ./gradlew buildRelease --no-daemon --max-workers=2
           no_output_timeout: 30m
-          name: 'Run: ./gradlew build'
+          name: 'Run: ./gradlew buildRelease'
       - save_cache:
           key: gradle-v1a-{{ arch }}-{{ checksum "./tmp_gradle_cache_seed" }}
           name: Save gradle cache
