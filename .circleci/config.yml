@@ -8,7 +8,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/android:2026.07
     steps:
       - checkout
       - run:
@@ -57,7 +57,7 @@ jobs:
     resource_class: medium
   deploy:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/android:2026.07
     working_directory: ~/code
     steps:
       - attach_workspace:
@@ -76,7 +76,7 @@ jobs:
           command: ./gradlew publish --no-daemon
   deploy_to_maven_central:
     docker:
-      - image: cimg/android:2024.01
+      - image: cimg/android:2026.07
     working_directory: ~/code
     steps:
       - attach_workspace:
