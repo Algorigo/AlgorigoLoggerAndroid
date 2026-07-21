@@ -8,7 +8,7 @@ plugins {
     id("org.jreleaser") version "1.25.0"
 }
 
-val versionStr = "1.2.4"
+val versionStr = "1.2.5"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
