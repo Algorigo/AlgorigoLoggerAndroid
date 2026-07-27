@@ -152,7 +152,7 @@ signing {
 //}
 
 android {
-    namespace = group
+    namespace = "$group.${archivesBaseName.replace("-", "_")}"
     compileSdk = 37
 
     defaultConfig {
