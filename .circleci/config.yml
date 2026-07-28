@@ -95,7 +95,7 @@ jobs:
           command: |
             cd algorigo_logger/build/staging-deploy
             zip -r staging-deploy.zip com
-            curl --request POST --verbose --header 'Authorization: Bearer $MAVEN_CENTRAL_TOKEN' --form bundle=@staging-deploy.zip https://central.sonatype.com/api/v1/publisher/upload
+            curl --request POST --verbose --header "Authorization: Bearer ${MAVEN_CENTRAL_TOKEN}" --form bundle=@staging-deploy.zip https://central.sonatype.com/api/v1/publisher/upload
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows
