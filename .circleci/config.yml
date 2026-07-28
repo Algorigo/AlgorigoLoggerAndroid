@@ -74,6 +74,12 @@ jobs:
       - run:
           name: Upload Maven Central
           command: ./gradlew publish --no-daemon
+      - run:
+          name: Upload to Maven Central
+          command: |
+            cd algorigo_logger/build/staging-deploy
+            zip -r staging-deploy.zip com
+            curl --request POST --verbose --header "Authorization: Bearer ${MAVEN_CENTRAL_TOKEN}" --form bundle=@staging-deploy.zip https://central.sonatype.com/repository/maven-snapshots
   deploy_to_maven_central:
     docker:
       - image: cimg/android:2026.07
@@ -95,7 +101,7 @@ jobs:
           command: |
             cd algorigo_logger/build/staging-deploy
             zip -r staging-deploy.zip com
-            curl --request POST --verbose --header 'Authorization: Bearer $MAVEN_CENTRAL_TOKEN' --form bundle=@staging-deploy.zip https://central.sonatype.com/api/v1/publisher/upload
+            curl --request POST --verbose --header "Authorization: Bearer ${MAVEN_CENTRAL_TOKEN}" --form bundle=@staging-deploy.zip https://central.sonatype.com/api/v1/publisher/upload
 
 # Orchestrate jobs using workflows
 # See: https://circleci.com/docs/workflows/ & https://circleci.com/docs/configuration-reference/#workflows

@@ -8,7 +8,7 @@ plugins {
     id("org.jreleaser") version "1.25.0"
 }
 
-val versionStr = "1.2.5"
+val versionStr = "1.2.6"
 
 fun String.runCommand(workingDir: File = file("./")): String {
     val parts = this.split("\\s".toRegex())
@@ -85,11 +85,8 @@ publishing {
     repositories {
         if (versionName.endsWith("SNAPSHOT")) {
             maven {
-                url = uri(findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String)
-                credentials {
-                    username = findProperty("nexusUsername") as String
-                    password = findProperty("nexusPassword") as String
-                }
+                name = "stagingDeploy"
+                url = uri(layout.buildDirectory.dir("staging-deploy").get().toString())
             }
         } else {
             maven {
