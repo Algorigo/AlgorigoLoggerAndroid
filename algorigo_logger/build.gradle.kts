@@ -85,11 +85,8 @@ publishing {
     repositories {
         if (versionName.endsWith("SNAPSHOT")) {
             maven {
-                url = uri(findProperty("NEXUS_SNAPSHOT_REPOSITORY_URL") as String)
-                credentials {
-                    username = findProperty("nexusUsername") as String
-                    password = findProperty("nexusPassword") as String
-                }
+                name = "stagingDeploy"
+                url = uri(layout.buildDirectory.dir("staging-deploy").get().toString())
             }
         } else {
             maven {
